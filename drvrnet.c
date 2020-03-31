@@ -252,7 +252,7 @@ static int root_send_buffer(int sock, int op, char *buffer, int buflen);
 static int root_recv_buffer(int sock, int *op, char *buffer,int buflen);
 static int root_openfile(char *filename, char *rwmode, int *sock);
 static int encode64(unsigned s_len, char *src, unsigned d_len, char *dst);
-static int ssl_get_with_curl(const char *url, curlmembuf* buffer, 
+static int ssl_get_with_curl(char *url, curlmembuf* buffer, 
                 char* username, char* password);
 static size_t curlToMemCallback(void *buffer, size_t size, size_t nmemb, void *userp);
 static int curlProgressCallback(void *clientp, double dltotal, double dlnow,
@@ -840,8 +840,11 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
     snprintf(tmpstr1, SHORTLEN,"Authorization: Basic %s\r\n", tmpstr2);
 
     if (strlen(tmpstr) + strlen(tmpstr1) > MAXLEN - 1)
+    {
+        fclose(*httpfile);
+        *httpfile=0;
         return (FILE_NOT_OPENED);
-
+    }
     strcat(tmpstr,tmpstr1);
   }
 
@@ -851,7 +854,11 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
   snprintf(tmpstr1,SHORTLEN,"User-Agent: FITSIO/HEASARC/%-8.3f\r\n",ffvers(&version)); 
  
   if (strlen(tmpstr) + strlen(tmpstr1) > MAXLEN - 1)
+  {
+        fclose(*httpfile);
+        *httpfile=0;
         return (FILE_NOT_OPENED);
+  }
 
   strcat(tmpstr,tmpstr1);
 
@@ -859,7 +866,11 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
   snprintf(tmpstr1,SHORTLEN,"Host: %s:%-d\r\n\r\n",host,port);
 
   if (strlen(tmpstr) + strlen(tmpstr1) > MAXLEN - 1)
+  {
+        fclose(*httpfile);
+        *httpfile=0;
         return (FILE_NOT_OPENED);
+  }
 
   strcat(tmpstr,tmpstr1);
 
@@ -870,6 +881,7 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
     snprintf (errorstr,MAXLEN,"http header short (http_open_network) %s",recbuf);
     ffpmsg(errorstr);
     fclose(*httpfile);
+    *httpfile=0;
     return (FILE_NOT_OPENED);
   }
 
@@ -922,6 +934,7 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
 	     scratchstr2 += 7;
 	     strcpy(turl, scratchstr2);
 	     fclose (*httpfile);
+             *httpfile=0;
 
              /* note the recursive call to itself */
 	     return 
@@ -942,11 +955,13 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
              {
                 ffpmsg("Error: redirected url string too long (http_open_network)");
                 fclose(*httpfile);
+                *httpfile=0;
                 return URL_PARSE_ERROR;
              }
 	     strcpy(url, scratchstr2);
              strcpy(contentencoding,"ftp://");
-	     fclose (*httpfile); 
+	     fclose (*httpfile);
+             *httpfile=0; 
 	     return 0;
           }
           
@@ -968,6 +983,7 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
              strcpy(url, scratchstr2);
              strcpy(contentencoding,"https://");
              fclose(*httpfile);
+             *httpfile=0;
              return 0;
           }
           
@@ -980,6 +996,7 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
 
     /* error.  could not open the http file */
     fclose(*httpfile);
+    *httpfile=0;
     return (FILE_NOT_OPENED);
   }
 
@@ -1007,6 +1024,7 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
         {
            ffpmsg("Error: content-encoding string too long (http_open_network)");
            fclose(*httpfile);
+           *httpfile=0;
            return URL_PARSE_ERROR;
         }
 	strcpy(contentencoding,scratchstr);
@@ -1270,7 +1288,8 @@ int https_open_network(char *filename, curlmembuf* buffer)
   int status=0;
   char *urlname=0;
   
-  urlname = (char *)malloc(strlen(filename)+9);
+  /* urlname may have .gz or .Z appended to it */
+  urlname = (char *)malloc(strlen(filename)+12);
   strcpy(urlname,"https://");
   strcat(urlname,filename);
   status = ssl_get_with_curl(urlname, buffer, 0, 0);
@@ -1307,7 +1326,12 @@ int ftps_open(char *filename, int rwmode, int *handle)
 {
   curlmembuf inmem;
   char errStr[MAXLEN];
+  char localFilename[MAXLEN]; /* may have .gz or .Z appended in ftps_open_network.*/
+  unsigned char firstByte=0,secondByte=0;
   int status=0;
+  FILE *compressedFile=0;
+  
+  strcpy(localFilename,filename);
     
   /* don't do r/w files */
   if (rwmode != 0) {
@@ -1333,7 +1357,7 @@ int ftps_open(char *filename, int rwmode, int *handle)
   signal(SIGALRM, signal_handler);
   alarm(net_timeout);
 
-  if (ftps_open_network(filename, &inmem))
+  if (ftps_open_network(localFilename, &inmem))
   {
      alarm(0);
      signal(SIGALRM, SIG_DFL);
@@ -1344,6 +1368,14 @@ int ftps_open(char *filename, int rwmode, int *handle)
   
   alarm(0);
   signal(SIGALRM, SIG_DFL);
+
+  if (strcmp(localFilename, filename))
+  {
+     /* ftps_open_network has already checked that this is safe to
+        copy into string of size FLEN_FILENAME */
+     strcpy(filename, localFilename);
+  }
+  
   /* We now have the file transfered from the ftps server into the
      inmem.memory buffer.  Now transfer that into a FITS memory file. */
   if ((status = mem_create(filename, handle)))
@@ -1352,24 +1384,344 @@ int ftps_open(char *filename, int rwmode, int *handle)
      free(inmem.memory);
      return (FILE_NOT_OPENED);
   }
-  
-  if (inmem.size % 2880)
+  if (inmem.size > 1)
   {
-     snprintf(errStr,MAXLEN,"Content-Length not a multiple of 2880 (ftps_open) %u",
-         inmem.size);
-     ffpmsg(errStr);
+     firstByte = (unsigned char)inmem.memory[0];
+     secondByte = (unsigned char)inmem.memory[1];
   }
-  status = mem_write(*handle, inmem.memory, inmem.size);
-  if (status)
+  if (firstByte == 0x1f && secondByte == 0x8b || 
+        strstr(localFilename,".Z"))
   {
-     ffpmsg("Error copying https file into memory (ftps_open)");
-     ffpmsg(filename);
-     free(inmem.memory);
-     mem_close_free(*handle);
-     return (FILE_NOT_OPENED);
+#ifdef HAVE_FMEMOPEN
+     compressedFile = fmemopen(inmem.memory, inmem.size, "r");
+#endif
+     if (!compressedFile)
+     {
+        ffpmsg("Error creating file in memory (ftps_open)");
+        free(inmem.memory);
+        return(FILE_NOT_OPENED);
+     }
+     if(mem_uncompress2mem(localFilename,compressedFile,*handle))
+     {
+        ffpmsg("Error writing compressed memory file (ftps_open)");
+        ffpmsg(filename);
+        fclose(compressedFile);
+        free(inmem.memory);
+        return(FILE_NOT_OPENED);
+     }
+     fclose(compressedFile);
+  }
+  else
+  {
+     if (inmem.size % 2880)
+     {
+        snprintf(errStr,MAXLEN,"Content-Length not a multiple of 2880 (ftps_open) %u",
+            inmem.size);
+        ffpmsg(errStr);
+     }
+     status = mem_write(*handle, inmem.memory, inmem.size);
+     if (status)
+     {
+        ffpmsg("Error copying https file into memory (ftps_open)");
+        ffpmsg(filename);
+        free(inmem.memory);
+        mem_close_free(*handle);
+        return (FILE_NOT_OPENED);
+     }
   }
   free(inmem.memory);
   return mem_seek(*handle, 0);
+}
+
+/*--------------------------------------------------------------------------*/
+int ftps_file_open(char *filename, int rwmode, int *handle)
+{
+  int ii, flen, status=0;
+  char errStr[MAXLEN];
+  char localFilename[MAXLEN]; /* may have .gz or .Z appended */
+  unsigned char firstByte=0,secondByte=0;
+  curlmembuf inmem;
+  FILE *compressedInFile=0;
+  
+  strcpy(localFilename, filename);
+  
+  /* Check if output file is actually a memory file */
+  if (!strncmp(netoutfile, "mem:", 4) )
+  {
+     /* allow the memory file to be opened with write access */
+     return( ftps_open(filename, READONLY, handle) );
+  }     
+
+  flen = strlen(netoutfile);
+  if (!flen)
+  {
+      /* cfileio made a mistake, we need to know where to write the file */
+      ffpmsg("Output file not set, shouldn't have happened (ftps_file_open)");
+      return (FILE_NOT_OPENED);
+  }
+  
+  inmem.memory=0;
+  inmem.size=0;
+  if (setjmp(env) != 0)
+  {
+     alarm(0);
+     signal(SIGALRM, SIG_DFL);
+     ffpmsg("Timeout (ftps_file_open)");
+     snprintf(errStr, MAXLEN, "Download timeout exceeded: %d seconds",net_timeout);
+     ffpmsg(errStr);
+     ffpmsg("   Timeout may be adjusted with fits_set_timeout");
+     free(inmem.memory);
+     return (FILE_NOT_OPENED);
+  }
+  signal(SIGALRM, signal_handler);
+  alarm(net_timeout);
+  if (ftps_open_network(localFilename, &inmem))
+  {
+     alarm(0);
+     signal(SIGALRM, SIG_DFL);
+     ffpmsg("Unable to read ftps file into memory (ftps_file_open)");
+     free(inmem.memory);
+     return (FILE_NOT_OPENED);  
+  }
+  alarm(0);
+  signal(SIGALRM, SIG_DFL);
+  
+  if (strstr(localFilename, ".Z"))
+  {
+     ffpmsg(".Z decompression not supported for file output (ftps_file_open)");
+     free(inmem.memory);
+     return (FILE_NOT_OPENED);
+  }
+  
+  if (strcmp(localFilename, filename))
+  {
+     /* ftps_open_network has already checked that this is safe to
+        copy into string of size FLEN_FILENAME */
+     strcpy(filename, localFilename);
+  }
+  
+  if (*netoutfile == '!')
+  {
+     /* user wants to clobber disk file, if it already exists */
+     for (ii = 0; ii < flen; ii++)
+         netoutfile[ii] = netoutfile[ii + 1];  /* remove '!' */
+
+     file_remove(netoutfile);
+  }
+
+  /* Create the output file */
+  if (file_create(netoutfile,handle)) 
+  {
+    ffpmsg("Unable to create output file (ftps_file_open)");
+    ffpmsg(netoutfile);
+    free(inmem.memory);
+    return (FILE_NOT_OPENED);
+  }
+  
+  if (inmem.size > 1)
+  {  
+     firstByte = (unsigned char)inmem.memory[0];
+     secondByte = (unsigned char)inmem.memory[1];
+  }
+  if (firstByte == 0x1f && secondByte == 0x8b)
+  {
+     /* Doing a file create/close/reopen to mimic the procedure in
+        ftp_file_open.  The earlier call to file_create ensures that 
+        checking is performed for the Hera case. */
+     file_close(*handle);
+     /* Reopen with direct call to fopen to set the outfile pointer */
+     outfile = fopen(netoutfile,"w");
+     if (!outfile)
+     {
+        ffpmsg("Unable to reopen the output file (ftps_file_open)");
+        ffpmsg(netoutfile);
+        free(inmem.memory);
+        return(FILE_NOT_OPENED);
+     }
+     
+#ifdef HAVE_FMEMOPEN
+     compressedInFile = fmemopen(inmem.memory, inmem.size, "r");
+#endif
+     if (!compressedInFile)
+     {
+        ffpmsg("Error creating compressed file in memory (ftps_file_open)");
+        free(inmem.memory);
+        fclose(outfile);
+        return(FILE_NOT_OPENED);
+     }
+     if (uncompress2file(filename, compressedInFile, outfile, &status))
+     {
+        ffpmsg("Unable to uncompress the output file (ftps_file_open)");
+        ffpmsg(filename);
+        ffpmsg(netoutfile);
+        fclose(outfile);
+        fclose(compressedInFile);
+        free(inmem.memory);
+        return(FILE_NOT_OPENED);
+     }
+     fclose(outfile);
+     fclose(compressedInFile);
+  }
+  else
+  {
+     if (inmem.size % 2880)
+     {
+       snprintf(errStr, MAXLEN,
+	       "Content-Length not a multiple of 2880 (ftps_file_open) %d",
+	       inmem.size);
+       ffpmsg(errStr);
+     }
+
+     if (file_write(*handle, inmem.memory, inmem.size))
+     {
+        ffpmsg("Error copying ftps file to disk file (ftps_file_open)");
+        ffpmsg(filename);
+        ffpmsg(netoutfile);
+        free(inmem.memory);
+        file_close(*handle);
+        return (FILE_NOT_OPENED);
+     }
+     file_close(*handle);
+  }
+  free(inmem.memory); 
+  
+  return file_open(netoutfile, rwmode, handle);
+  
+}
+
+/*--------------------------------------------------------------------------*/
+int ftps_compress_open(char *filename, int rwmode, int *handle)
+{
+   int ii, flen, status=0;
+  char errStr[MAXLEN];
+  char localFilename[MAXLEN]; /* may have .gz or .Z appended */
+  unsigned char firstByte=0,secondByte=0;
+  curlmembuf inmem;
+  FILE *compressedInFile=0;
+  
+  /* don't do r/w files */
+  if (rwmode != 0) {
+    ffpmsg("Compressed files must be r/o");
+    return (FILE_NOT_OPENED);
+  }
+  
+  strcpy(localFilename, filename);
+  
+  flen = strlen(netoutfile);
+  if (!flen)
+  {
+      /* cfileio made a mistake, we need to know where to write the file */
+      ffpmsg("Output file not set, shouldn't have happened (ftps_compress_open)");
+      return (FILE_NOT_OPENED);
+  }
+  
+  inmem.memory=0;
+  inmem.size=0;
+  if (setjmp(env) != 0)
+  {
+     alarm(0);
+     signal(SIGALRM, SIG_DFL);
+     ffpmsg("Timeout (ftps_compress_open)");
+     snprintf(errStr, MAXLEN, "Download timeout exceeded: %d seconds",net_timeout);
+     ffpmsg(errStr);
+     ffpmsg("   Timeout may be adjusted with fits_set_timeout");
+     free(inmem.memory);
+     return (FILE_NOT_OPENED);
+  }
+  signal(SIGALRM, signal_handler);
+  alarm(net_timeout);
+  if (ftps_open_network(localFilename, &inmem))
+  {
+     alarm(0);
+     signal(SIGALRM, SIG_DFL);
+     ffpmsg("Unable to read ftps file into memory (ftps_compress_open)");
+     free(inmem.memory);
+     return (FILE_NOT_OPENED);  
+  }
+  alarm(0);
+  signal(SIGALRM, SIG_DFL);
+  
+  if (strcmp(localFilename, filename))
+  {
+     /* ftps_open_network has already checked that this is safe to
+        copy into string of size FLEN_FILENAME */
+     strcpy(filename, localFilename);
+  }
+  if (inmem.size > 1)
+  {  
+     firstByte = (unsigned char)inmem.memory[0];
+     secondByte = (unsigned char)inmem.memory[1];
+  }
+  if ((firstByte == 0x1f && secondByte == 0x8b) || 
+        strstr(localFilename,".gz") || strstr(localFilename,".Z"))
+  {
+     if (*netoutfile == '!')
+     {
+        /* user wants to clobber disk file, if it already exists */
+        for (ii = 0; ii < flen; ii++)
+            netoutfile[ii] = netoutfile[ii + 1];  /* remove '!' */
+
+        file_remove(netoutfile);
+     }
+     /* Create the output file */
+     if (file_create(netoutfile,handle)) 
+     {
+       ffpmsg("Unable to create output file (ftps_compress_open)");
+       ffpmsg(netoutfile);
+       free(inmem.memory);
+       return (FILE_NOT_OPENED);
+     }
+     if (file_write(*handle, inmem.memory, inmem.size))
+     {
+        ffpmsg("Error copying ftps file to disk file (ftps_file_open)");
+        ffpmsg(filename);
+        ffpmsg(netoutfile);
+        free(inmem.memory);
+        file_close(*handle);
+        return (FILE_NOT_OPENED);
+     }
+     file_close(*handle);
+
+    /* File is on disk, let's uncompress it into memory */
+    if (NULL == (diskfile = fopen(netoutfile,"r"))) {
+      ffpmsg("Unable to reopen disk file (ftps_compress_open)");
+      ffpmsg(netoutfile);
+      free(inmem.memory);
+      return (FILE_NOT_OPENED);
+    }
+
+    if ((status =  mem_create(localFilename,handle))) {
+      ffpmsg("Unable to create memory file (ftps_compress_open)");
+      ffpmsg(localFilename);
+      free(inmem.memory);
+      fclose(diskfile);
+      diskfile=0;
+      return (FILE_NOT_OPENED);
+    }
+
+    status = mem_uncompress2mem(localFilename,diskfile,*handle);
+    fclose(diskfile);
+    diskfile=0;
+
+    if (status) {
+      ffpmsg("Error writing compressed memory file (ftps_compress_open)");
+      free(inmem.memory);
+      mem_close_free(*handle);
+      return (FILE_NOT_OPENED);
+     }
+      
+  }
+  else
+  {
+     ffpmsg("Cannot write uncompressed infile to compressed outfile (ftps_compress_open)");
+     free(inmem.memory);
+     return (FILE_NOT_OPENED);
+  }
+      
+  free(inmem.memory); 
+  
+  return mem_seek(*handle,0);
+  
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1382,15 +1734,11 @@ int ftps_open_network(char *filename, curlmembuf* buffer)
   char *password=0;
   char *hostname=0;
   char *dirpath=0;
+  char *strptr=0;
   float version=0.0;
-  int iDirpath=0, len=0;  
+  int iDirpath=0, len=0, origLen=0;
+  int status=0; 
   
-  if (strstr(filename,".Z"))
-  {
-     ffpmsg("x-compress .Z format not currently supported with ftps transfers");
-     return(FILE_NOT_OPENED);
-  }
-
   strcpy(url,"ftp://");
 
   /* The filename may already contain a username and password, as indicated 
@@ -1439,7 +1787,8 @@ int ftps_open_network(char *filename, curlmembuf* buffer)
      password = agentStr;
   }
   
-  if (strlen(url) + strlen(hostname) + strlen(dirpath) > MAXLEN-1)
+  /* url may eventually have .gz or .Z appended to it */
+  if (strlen(url) + strlen(hostname) + strlen(dirpath) > MAXLEN-4)
   {
      ffpmsg("Full URL name is too long (ftps_open_network)");
      return (FILE_NOT_OPENED);
@@ -1453,14 +1802,31 @@ int ftps_open_network(char *filename, curlmembuf* buffer)
   printf("hostname = %s\n",hostname);
 */
 
-  return (ssl_get_with_curl(url, buffer, username, password));
+  origLen = strlen(url);
+  status = ssl_get_with_curl(url, buffer, username, password);
+  /* If original url has .gz or .Z appended, do the same to the original filename.
+     Note that url also differs from original filename at this point, since
+     filename may have included username@password (which url would not). */
+  len = strlen(url);
+  if ((len-origLen) == 2 || (len-origLen) == 3)
+  {
+     if (strlen(filename) > FLEN_FILENAME - 4)
+     {
+        ffpmsg("Filename is too long to append compression ext (ftps_open_network)");
+        /* buffer memory must be freed by calling routine */
+        return (FILE_NOT_OPENED);
+     }
+     strptr = url + origLen;
+     strcat(filename, strptr);
+  }
+  return status;
   
  }
 
 /*--------------------------------------------------------------------------*/
 /* Function to perform common curl interfacing for https or ftps transfers */
 
-int ssl_get_with_curl(const char *url, curlmembuf* buffer, char* username,
+int ssl_get_with_curl(char *url, curlmembuf* buffer, char* username,
                         char* password)
 {
   /* These settings will force libcurl to perform host and peer authentication.
@@ -1474,14 +1840,18 @@ int ssl_get_with_curl(const char *url, curlmembuf* buffer, char* username,
   float version=0.0;
   char *tmpUrl=0;
   char *verify=0;
+  int isFtp = (strstr(url,"ftp://") != NULL);
+  int experimentWithCompression = (!strstr(url,".gz") && !strstr(url,".Z")
+                && !strstr(url,"?"));
+  int notFound=1;
   #ifdef CFITSIO_HAVE_CURL
   CURL *curl=0;
   CURLcode res;
   char curlErrBuf[CURL_ERROR_SIZE];
   
-  if (strstr(url,".Z"))
+  if (strstr(url,".Z") && !isFtp)
   {
-     ffpmsg("x-compress .Z format not currently supported with curl https/ftps transfers");
+     ffpmsg("x-compress .Z format not currently supported with curl https transfers");
      return(FILE_NOT_OPENED);
   }
 
@@ -1528,7 +1898,7 @@ int ssl_get_with_curl(const char *url, curlmembuf* buffer, char* username,
   
   /* USESSL only necessary for ftps, though it may not hurt anything
      if it were also set for https. */
-  if (strstr(tmpUrl, "ftp://"))
+  if (isFtp)
   {
      curl_easy_setopt(curl, CURLOPT_USE_SSL, CURLUSESSL_ALL);
      if (username)
@@ -1537,9 +1907,10 @@ int ssl_get_with_curl(const char *url, curlmembuf* buffer, char* username,
         curl_easy_setopt(curl, CURLOPT_PASSWORD, password);
   }
   
-  /* Unless url already contains a .gz or '?' (probably from a cgi script),
+  /* Unless url already contains a .gz, .Z or '?' (probably from a cgi script),
      first try with .gz appended. */
-  if (!strstr(url,".gz") && !strstr(url,"?"))
+  
+  if (experimentWithCompression)
      strcat(tmpUrl, ".gz");
 
   /* First attempt: verification on */
@@ -1576,13 +1947,28 @@ int ssl_get_with_curl(const char *url, curlmembuf* buffer, char* username,
      res = curl_easy_perform(curl);
      if (res != CURLE_OK)
      {
-        /* Unless original url already contains a .gz or '?' (probably from a cgi script),
-           try again without.gz appended. */
-        if (!strstr(url,".gz") && !strstr(url,"?"))
+        if (isFtp && experimentWithCompression)
+        {
+           strcpy(tmpUrl, url);
+           strcat(tmpUrl, ".Z");
+           curl_easy_setopt(curl, CURLOPT_URL, tmpUrl);
+           /* For ftps, make another attempt with .Z */
+           res = curl_easy_perform(curl);
+           if (res == CURLE_OK)
+           {
+              /* Success, but should still warn */
+              fprintf(stderr, "Warning: Unable to perform SSL verification on https transfer from: %s\n",
+                   tmpUrl);
+              notFound=0;          
+           }
+        }
+          
+        /* If we've been appending .gz or .Z, try a final time without. */
+        if (experimentWithCompression && notFound)
         {
            strcpy(tmpUrl, url);
            curl_easy_setopt(curl, CURLOPT_URL, tmpUrl);
-           /* Third attempt: no verification, no .gz appended */ 
+           /* attempt with no verification, no .gz or .Z appended */ 
            res = curl_easy_perform(curl);
            if (res != CURLE_OK)
            {
@@ -1599,7 +1985,7 @@ int ssl_get_with_curl(const char *url, curlmembuf* buffer, char* username,
               fprintf(stderr, "Warning: Unable to perform SSL verification on https transfer from: %s\n",
                    tmpUrl);           
         }
-        else
+        else if (notFound)
         {
            snprintf(errStr,MAXLEN,"libcurl error: %d",res);
            ffpmsg(errStr);
@@ -1618,23 +2004,36 @@ int ssl_get_with_curl(const char *url, curlmembuf* buffer, char* username,
   }
   else if (res == CURLE_HTTP_RETURNED_ERROR || res == CURLE_REMOTE_FILE_NOT_FOUND)
   {
-     /* Verification isn't the problem.  No need to relax peer/host checking */
-     /* Unless url already contains a .gz or '?' (probably from a cgi script),
-        try again with original url unappended */
-     if (!strstr(url,".gz") && !strstr(url,"?"))
+     /* .gz extension failed and verification isn't the problem.  
+         No need to relax peer/host checking */
+     /* Unless url already contained a .gz, .Z or '?' (probably from a cgi script),
+        try again with original url unappended (but first try .Z if this is ftps). */
+     if (experimentWithCompression)
      {
-        strcpy(tmpUrl, url);
-        curl_easy_setopt(curl, CURLOPT_URL, tmpUrl); 
-        res = curl_easy_perform(curl);
-        if (res != CURLE_OK)
+        if (isFtp)
         {
-           snprintf(errStr,MAXLEN,"libcurl error: %d",res);
-           ffpmsg(errStr);
-           if (strlen(curlErrBuf))
-              ffpmsg(curlErrBuf);     
-           curl_easy_cleanup(curl);  
-           free(tmpUrl);
-           return (FILE_NOT_OPENED);
+           strcpy(tmpUrl, url);
+           strcat(tmpUrl, ".Z");
+           curl_easy_setopt(curl, CURLOPT_URL, tmpUrl); 
+           res = curl_easy_perform(curl);
+           if (res == CURLE_OK)
+              notFound = 0;
+        }
+        if (notFound)
+        {
+           strcpy(tmpUrl, url);
+           curl_easy_setopt(curl, CURLOPT_URL, tmpUrl); 
+           res = curl_easy_perform(curl);
+           if (res != CURLE_OK)
+           {
+              snprintf(errStr,MAXLEN,"libcurl error: %d",res);
+              ffpmsg(errStr);
+              if (strlen(curlErrBuf))
+                 ffpmsg(curlErrBuf);     
+              curl_easy_cleanup(curl);  
+              free(tmpUrl);
+              return (FILE_NOT_OPENED);
+           }
         }
      }
      else
@@ -1649,6 +2048,9 @@ int ssl_get_with_curl(const char *url, curlmembuf* buffer, char* username,
      }
   }
   
+  /* If we made it here, assume tmpUrl was successful. Calling routines
+     must make sure url can hold up to 3 extra chars */
+  strcpy(url, tmpUrl);
   
   free(tmpUrl);
   curl_easy_cleanup(curl);
@@ -2492,7 +2894,7 @@ int ftp_file_exist(char *filename)
   }
 
   /* Wait for the 220 response */
-  if (ftp_status(command,"220 ")) {
+  if (ftp_status(command,"220")) {
     ffpmsg ("error connecting to remote server, no 220 seen (ftp_file_exist)");
     fclose(command);
     NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
@@ -2517,8 +2919,20 @@ int ftp_file_exist(char *filename)
   snprintf(tmpstr,MAXLEN,"USER %s\r\n",username);
 
   status = NET_SendRaw(sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
-
-  if (ftp_status(command,"331 ")) {
+  
+  /* If command is refused due to the connection requiring SSL (ie. an
+     fpts connection), this is where it will first be detected by way
+     of a 550 error code. */
+     
+  status = ftp_status(command,"331 ");
+  if (status == 550)
+  {
+    ffpmsg ("Server is requesting SSL, will switch to ftps (ftp_file_exist)");
+    fclose(command);
+    NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
+    return -1;
+  }
+  else if (status) {
     ffpmsg ("USER error no 331 seen (ftp_file_exist)");
     fclose(command);
     NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
@@ -2942,10 +3356,11 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
 /* Called by cfileio after parsing the output file off of the input file url */
 
   char newinfile[MAXLEN];
-  FILE *httpfile;
+  FILE *httpfile=0;
   char contentencoding[MAXLEN];
   int contentlength;
   int foundfile = 0;
+  int status=0;
 
   /* set defaults  */
   strcpy(urltype,"http://");
@@ -2996,16 +3411,21 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
     strcpy(newinfile,infile);
     strcat(newinfile,".gz");
 
-    if (!http_open_network(newinfile,&httpfile,contentencoding,
-			   &contentlength)) {
+    status = http_open_network(newinfile,&httpfile,contentencoding,
+			   &contentlength);
+    if (!status) {
       if (!strcmp(contentencoding, "ftp://")) {
           /* this is a signal from http_open_network that indicates that */
           /* the http server returned a 301 or 302 redirect to a FTP URL. */
           /* Check that the file exists, because redirect many not be reliable */
 	   
-          if (ftp_file_exist(newinfile)) { 
+          if (ftp_file_exist(newinfile)>0) { 
               /* The ftp .gz compressed file is there, all is good!  */
               strcpy(urltype, "ftp://");
+              if (strlen(newinfile) > FLEN_FILENAME-1)
+              {
+                 return URL_PARSE_ERROR;
+              }
               strcpy(infile,newinfile);
 
               if (strlen(outfile1)) {
@@ -3039,10 +3459,21 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
           return 0;
       } else {
           /* found the http .gz compressed file */
-          fclose(httpfile);
+          if (httpfile)
+             fclose(httpfile);
           foundfile = 1;
+          if (strlen(newinfile) > FLEN_FILENAME-1)
+          {
+             return URL_PARSE_ERROR;
+          }
           strcpy(infile,newinfile);
       }
+    }
+    else if (status != FILE_NOT_OPENED)
+    {
+       /* Some other error occured aside from not finding file, such as
+          a url parsing error.  Don't continue trying with other extensions. */
+       return status;   
     }
 
    if (!foundfile) {
@@ -3062,9 +3493,13 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
           /* the http server returned a 301 or 302 redirect to a FTP URL. */
           /* Check that the file exists, because redirect many not be reliable */
 	   
-          if (ftp_file_exist(newinfile)) { 
+          if (ftp_file_exist(newinfile)>0) { 
               /* The ftp .Z compressed file is there, all is good!  */
               strcpy(urltype, "ftp://");
+              if (strlen(newinfile) > FLEN_FILENAME-1)
+              {
+                 return URL_PARSE_ERROR;
+              }
               strcpy(infile,newinfile);
 
               if (strlen(outfile1)) {
@@ -3085,13 +3520,18 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
 		    }
                 } 
             }
-            return 0;   /* found the .gz compressed ftp file */
+            return 0;   /* found the .Z compressed ftp file */
           }
           /* fall through to here if ftp redirect does not exist */
         }  else {
            /* found the http .Z compressed file */
-           fclose(httpfile);
+           if (httpfile)
+              fclose(httpfile);
            foundfile = 1;
+           if (strlen(newinfile) > FLEN_FILENAME-1)
+           {
+              return URL_PARSE_ERROR;
+           }
            strcpy(infile,newinfile);
         }
       }
@@ -3110,9 +3550,13 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
           /* the http server returned a 301 or 302 redirect to a FTP URL. */
           /* Check that the file exists, because redirect many not be reliable */
 	   
-          if (ftp_file_exist(newinfile)) { 
+          if (ftp_file_exist(newinfile)>0) { 
               /* The ftp file is there, all is good!  */
               strcpy(urltype, "ftp://");
+              if (strlen(newinfile) > FLEN_FILENAME-1)
+              {
+                 return URL_PARSE_ERROR;
+              }
               strcpy(infile,newinfile);
 
               if (strlen(outfile1)) {
@@ -3142,9 +3586,14 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
              leave infile alone and do immediate return. */
           return 0;
       }  else {
-          /* found the http .Z compressed file */
-          fclose(httpfile);
+          /* found the base named file */
+          if (httpfile)
+             fclose(httpfile);
           foundfile = 1;
+          if (strlen(newinfile) > FLEN_FILENAME-1)
+          {
+             return URL_PARSE_ERROR;
+          }
           strcpy(infile,newinfile);
       }
 
@@ -3225,9 +3674,19 @@ int ftps_checkfile (char *urltype, char *infile, char *outfile1)
      }
 
      if (!strncmp(outfile1, "mem:", 4))
-        strcpy(urltype,"httpsmem://");
-     else       
-        strcpy(urltype,"ftpsfile://");
+        strcpy(urltype,"ftpsmem://");
+     else
+     {
+        if (strstr(outfile1,".gz") || strstr(outfile1,".Z"))
+        {
+           /* Note that for Curl dependent handlers, we can't check
+           at this point if infile will have a .gz or .Z appended. 
+           If it does not, the ftpscompress 'open' handler will fail.*/
+           strcpy(urltype,"ftpscompress://");
+        }
+        else
+           strcpy(urltype,"ftpsfile://");
+     }
    }
    return 0;
 }
@@ -3240,6 +3699,7 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile1)
   FILE *command;
   int sock;
   int foundfile = 0;
+  int status=0;
 
  /* Small helper functions to set the netoutfile static string */
 
@@ -3258,9 +3718,19 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile1)
     strcat(newinfile,".gz");
  
     /* look for .gz version of the file */
-    if (ftp_file_exist(newinfile)) {
+    status = ftp_file_exist(newinfile);
+    if (status > 0) {
       foundfile = 1;
+      if (strlen(newinfile) > FLEN_FILENAME-1)
+         return URL_PARSE_ERROR;
       strcpy(infile,newinfile);
+    }
+    else if (status < 0)
+    {
+       /* Server is demanding an SSL connection. 
+          Change urltype and exit. */
+       ftps_checkfile(urltype, infile, outfile1);
+       return 0;
     }
 
     if (!foundfile) {
@@ -3274,6 +3744,8 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile1)
     /* look for .Z version of the file */
       if (ftp_file_exist(newinfile)) {
         foundfile = 1;
+        if (strlen(newinfile) > FLEN_FILENAME-1)
+           return URL_PARSE_ERROR;
         strcpy(infile,newinfile);
       }
     }
@@ -3283,9 +3755,19 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile1)
       strcpy(newinfile,infile);
  
       /* look for the base file */
-      if (ftp_file_exist(newinfile)) {
+      status = ftp_file_exist(newinfile);
+      if (status > 0) {
         foundfile = 1;
+        if (strlen(newinfile) > FLEN_FILENAME-1)
+           return URL_PARSE_ERROR;
         strcpy(infile,newinfile);
+      }
+      else if (status < 0)
+      {
+         /* Server is demanding an SSL connection. 
+            Change urltype and exit. */
+         ftps_checkfile(urltype, infile, outfile1);
+         return 0;
       }
   }
 
@@ -3331,9 +3813,12 @@ static int ftp_status(FILE *ftp, char *statusstr)
 {
   /* read through until we find a string beginning with statusstr */
   /* This needs a timeout */
+  
+  /* Modified 2/19 to return the numerical value of the returned status when
+     it differs from the requested status. */
 
   char recbuf[MAXLEN], errorstr[SHORTLEN];
-  int len;
+  int len, ftpcode=0;
 
   len = strlen(statusstr);
   while (1) {
@@ -3349,10 +3834,13 @@ static int ftp_status(FILE *ftp, char *statusstr)
       return 0; /* we're ok */
     }
     if (recbuf[0] > '3') {
-      /* oh well, some sort of error */
+      /* oh well, some sort of error. */
       snprintf(errorstr,SHORTLEN,"ERROR ftp_status wants %s but got %s", statusstr, recbuf);
       ffpmsg(errorstr);
-     return 1; 
+      /* Return the numerical code, if string can be converted to int.
+         But must not return 0 from here. */
+      ftpcode = atoi(recbuf);
+      return ftpcode ? ftpcode : 1; 
     }
     snprintf(errorstr,SHORTLEN,"ERROR ftp_status wants %s but got unexpected %s", statusstr, recbuf);
     ffpmsg(errorstr);
