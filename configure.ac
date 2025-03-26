@@ -3,7 +3,7 @@
 # Package name and version number:
 m4_define([v_maj], [4])
 m4_define([v_min], [6])
-m4_define([v_mic], [1])
+m4_define([v_mic], [2])
 m4_define([project_version], [v_maj.v_min.v_mic])
 AC_INIT([cfitsio], [project_version])
 #AC_INIT([cfitsio], [project_version], [ccfits@heasarc.gsfc.nasa.gov], [tarname], [url])
@@ -32,6 +32,7 @@ AC_CANONICAL_TARGET([])
 #AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_SRCDIR([fitscore.c])
 AM_INIT_AUTOMAKE([foreign])
+AM_MAINTAINER_MODE
 
 LT_INIT
 
@@ -295,8 +296,6 @@ if test $AR = noar; then
 fi
 ARCHIVE="$AR rv"
 AC_SUBST(ARCHIVE)
-
-AC_PROG_RANLIB
 
 dnl Checks for ANSI stdlib.h.
 AC_CHECK_HEADERS(stdlib.h string.h math.h limits.h ,ANSI_HEADER=yes,ANSI_HEADER=no)dnl
