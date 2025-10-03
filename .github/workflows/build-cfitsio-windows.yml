@@ -19,15 +19,25 @@ jobs:
         shell: pwsh
         run: |
           $baseline = (git -C vcpkg rev-parse HEAD).Trim()
-          @"{
-            "name": "cfitsio-build",
-            "version-string": "1.0.0",
-            "dependencies": [ "zlib", "pthreads" ],
-            "builtin-baseline": "$baseline"
-          }"@ | Out-File -Encoding utf8 -NoNewline vcpkg.json
-          @"{
-            "default-registry": { "kind": "builtin", "baseline": "$baseline" }
-          }"@ | Out-File -Encoding utf8 -NoNewline vcpkg-configuration.json
+
+          $manifestObj = [ordered]@{
+            name = "cfitsio-build"
+            "version-string" = "1.0.0"
+            dependencies = @("zlib","pthreads")
+            "builtin-baseline" = $baseline
+          }
+          $manifestJson = $manifestObj | ConvertTo-Json -Depth 3
+          Set-Content -Path vcpkg.json -Value $manifestJson -Encoding utf8
+
+          $configObj = [ordered]@{
+            "default-registry" = @{
+              kind = "builtin"
+              baseline = $baseline
+            }
+          }
+          $configJson = $configObj | ConvertTo-Json -Depth 3
+          Set-Content -Path vcpkg-configuration.json -Value $configJson -Encoding utf8
+
 
       - name: Run vcpkg (manifest mode)
         uses: lukka/run-vcpkg@v11
