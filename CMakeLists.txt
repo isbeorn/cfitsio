@@ -64,6 +64,10 @@ OPTION(USE_SSSE3 "Enable use of instructions in the SSSE3 extended instruction s
 
 OPTION(USE_BZIP2 "Enable bzip2 support" OFF)
 
+# Build the legacy Fortran-77 wrappers (requires a Fortran toolchain).
+# Leave OFF for a pure C DLL on MSVC.
+option(CFITSIO_BUILD_F77 "Build Fortran 77 wrappers" OFF)
+
 #==============================================================================
 
 FIND_PACKAGE(ZLIB REQUIRED)
@@ -83,9 +87,13 @@ IF(USE_CURL)
 ENDIF()
 
 IF(USE_PTHREADS)
-   FIND_PACKAGE(Threads REQUIRED)
-   ADD_DEFINITIONS(-D_REENTRANT)
-ENDIF(USE_PTHREADS)
+  ADD_DEFINITIONS(-D_REENTRANT)
+  if (WIN32)
+    find_package(PThreads4W REQUIRED)  # provided by vcpkg 'pthreads' port
+  else()
+    find_package(Threads REQUIRED)
+  endif()
+ENDIF()
 
 IF(USE_BZIP2)
    FIND_PACKAGE(BZip2 REQUIRED)
@@ -225,8 +233,7 @@ SET(H_FILES fitsio.h fitsio2.h longnam.h)
 SET(SRC_FILES
     buffers.c cfileio.c checksum.c
     drvrfile.c drvrmem.c drvrnet.c drvrsmem.c
-    editcol.c edithdu.c eval_f.c eval_l.c eval_y.c
-    f77_wrap1.c f77_wrap2.c f77_wrap3.c f77_wrap4.c
+    editcol.c edithdu.c eval_f.c eval_l.c eval_y.c    
     fits_hcompress.c fits_hdecompress.c fitscore.c
     getcol.c getcolb.c getcold.c getcole.c getcoli.c getcolj.c getcolk.c
     getcoll.c getcols.c getcolsb.c getcolui.c getcoluj.c getcoluk.c
@@ -237,6 +244,10 @@ SET(SRC_FILES
     putkey.c quantize.c region.c ricecomp.c scalnull.c simplerng.c swapproc.c
     wcssub.c wcsutil.c zcompress.c zuncompress.c
 )
+if (CFITSIO_BUILD_F77)
+  list(APPEND SRC_FILES
+    f77_wrap1.c f77_wrap2.c f77_wrap3.c f77_wrap4.c)
+endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 
@@ -253,6 +264,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 #==============================================================================
 
 ADD_LIBRARY(${LIB_NAME} ${LIB_TYPE} ${H_FILES} ${SRC_FILES})
+
+if (MSVC)
+  target_compile_definitions(${LIB_NAME} PRIVATE strtok_r=strtok_s)
+endif()
 
 # Math:
 TARGET_LINK_LIBRARIES(${LIB_NAME} ${M_LIB})
@@ -271,9 +286,13 @@ IF (CURL_FOUND)
     SET (PKG_CONFIG_LIBS "${PKG_CONFIG_LIBS} -lcurl")
 ENDIF(CURL_FOUND)
 # PThreads:
-IF (THREADS_FOUND)
-    TARGET_LINK_LIBRARIES(${LIB_NAME} Threads::Threads)
-ENDIF(THREADS_FOUND)
+if (USE_PTHREADS)
+  if (WIN32)
+    TARGET_LINK_LIBRARIES(${LIB_NAME} PRIVATE PThreads4W::PThreads4W)
+  else()
+    TARGET_LINK_LIBRARIES(${LIB_NAME} PRIVATE Threads::Threads)
+  endif()
+endif()
 # BZip2:
 IF (BZIP2_FOUND)
     TARGET_INCLUDE_DIRECTORIES(${LIB_NAME} PUBLIC ${BZIP2_INCLUDE_DIRS})

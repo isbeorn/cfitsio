@@ -53,35 +53,6 @@ jobs:
         shell: pwsh
         run: echo "VCPKG_INSTALLED_DIR=$env:RUNNER_TEMP\vcpkg_installed" >> $env:GITHUB_ENV
 
-      # Remove F77 wrappers (avoids cfortran.h environment error on MSVC)
-      - name: Remove Fortran 77 wrappers on Windows
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $p = Join-Path $PWD "CMakeLists.txt"
-          (Get-Content $p) |
-            Where-Object { $_ -notmatch 'f77_wrap[1-4]\.c' } |
-            Set-Content $p
-      # Force-link PThreads4W on Windows when USE_PTHREADS=ON
-      - name: Inject PThreads4W link for Windows
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $p = Join-Path $PWD "CMakeLists.txt"
-          $inject = @"
-          # --- injected by CI ---
-          if(WIN32 AND DEFINED USE_PTHREADS AND USE_PTHREADS)
-            find_package(PThreads4W REQUIRED)
-            target_link_libraries(cfitsio PRIVATE PThreads4W::PThreads4W)
-          endif()
-          "@
-              # avoid duplicate injections on reruns
-              $text = Get-Content $p -Raw
-              if ($text -notmatch 'PThreads4W::PThreads4W') {
-                Add-Content -Path $p -Value $inject
-              }
-
-
       - name: Configure (CMake -> VS 2022)
         shell: pwsh
         run: >
