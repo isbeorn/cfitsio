@@ -19,31 +19,29 @@ jobs:
         with:
           vcpkgJsonGlob: 'vcpkg.json'
 
-      # Put MSVC on PATH
       - name: Setup MSVC dev command prompt
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
 
-      # Set VCPKG_INSTALLED_DIR outside source/build to avoid export-path issues
       - name: Set env vars
         shell: pwsh
         run: |
           echo "VCPKG_INSTALLED_DIR=$env:RUNNER_TEMP\vcpkg_installed" >> $env:GITHUB_ENV
 
-      - name: Configure (CMake -> Ninja)
+      - name: Configure (CMake -> VS 2022)
+        shell: pwsh
         run: >
           cmake -S . -B build\cfitsio
-          -G "Ninja"
-          -DCMAKE_BUILD_TYPE=Release
+          -G "Visual Studio 17 2022" -A x64
           -DBUILD_SHARED_LIBS=ON
           -DUSE_SSE2=ON
           -DUSE_SSSE3=ON
           -DUSE_CURL=OFF
           -DUSE_PTHREADS=ON
-          -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}\scripts\buildsystems\vcpkg.cmake
+          -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_ROOT}\scripts\buildsystems\vcpkg.cmake"
           -DVCPKG_TARGET_TRIPLET=x64-windows
-          -DVCPKG_INSTALLED_DIR="${{ env.VCPKG_INSTALLED_DIR }}"
+          -DVCPKG_INSTALLED_DIR="${env:VCPKG_INSTALLED_DIR}"
 
       - name: Build
         run: cmake --build build\cfitsio --config Release -j 2
