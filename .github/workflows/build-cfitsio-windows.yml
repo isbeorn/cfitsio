@@ -9,23 +9,24 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout (incl. submodules if used)
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
-      # --- vcpkg: reads your vcpkg.json, pins via builtin-baseline, installs & caches deps ---
+      # Use vcpkg manifest mode (needs vcpkg.json at repo root)
       - name: Run vcpkg
         uses: lukka/run-vcpkg@v11
         with:
-          vcpkgJsonGlob: '**/vcpkg.json'   # expects a vcpkg.json in repo (see note below)
-          # you can add extraArgs: --clean-after-build if you want smaller cache size
+          vcpkgJsonGlob: 'vcpkg.json'
 
-      # --- Configure with CMake (Ninja single-config keeps outputs in one folder) ---
-      - name: Configure (CMake -> Ninja)
+      - name: Configure (CMake -> Ninja, force MSVC, keep vcpkg outside src/build)
+        env:
+          # Put vcpkg_installed not under the source or build dirs:
+          VCPKG_INSTALLED_DIR: ${{ runner.temp }}\vcpkg_installed
         run: >
           cmake -S . -B build\cfitsio
           -G "Ninja"
+          -DCMAKE_C_COMPILER=cl.exe
+          -DCMAKE_CXX_COMPILER=cl.exe
           -DCMAKE_BUILD_TYPE=Release
           -DBUILD_SHARED_LIBS=ON
           -DUSE_SSE2=ON
@@ -34,11 +35,11 @@ jobs:
           -DUSE_PTHREADS=ON
           -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}\scripts\buildsystems\vcpkg.cmake
           -DVCPKG_TARGET_TRIPLET=x64-windows
+          -DVCPKG_INSTALLED_DIR="${{ env.VCPKG_INSTALLED_DIR }}"
 
       - name: Build
         run: cmake --build build\cfitsio --config Release -j 2
 
-      # --- Collect DLL + import lib + PDB + headers ---
       - name: Collect artifacts
         shell: pwsh
         run: |
