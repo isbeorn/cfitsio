@@ -53,6 +53,16 @@ jobs:
         shell: pwsh
         run: echo "VCPKG_INSTALLED_DIR=$env:RUNNER_TEMP\vcpkg_installed" >> $env:GITHUB_ENV
 
+      # Remove F77 wrappers (avoids cfortran.h environment error on MSVC)
+      - name: Remove Fortran 77 wrappers on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $p = Join-Path $PWD "CMakeLists.txt"
+          (Get-Content $p) |
+            Where-Object { $_ -notmatch 'f77_wrap[1-4]\.c' } |
+            Set-Content $p
+
       - name: Configure (CMake -> VS 2022)
         shell: pwsh
         run: >
