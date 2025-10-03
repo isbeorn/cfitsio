@@ -1,42 +1,28 @@
 name: build-cfitsio-windows
 
 on:
-  workflow_dispatch:
+  push:
+  pull_request:
 
 jobs:
   build:
     runs-on: windows-latest
 
-    env:
-      VCPKG_ROOT: ${{ runner.tool_cache }}\vcpkg
-
     steps:
-      - name: Checkout
+      - name: Checkout (incl. submodules if used)
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Cache vcpkg
-        uses: actions/cache@v4
+      # --- vcpkg: reads your vcpkg.json, pins via builtin-baseline, installs & caches deps ---
+      - name: Run vcpkg
+        uses: lukka/run-vcpkg@v11
         with:
-          path: |
-            ${{ env.VCPKG_ROOT }}
-            C:\Users\runneradmin\AppData\Local\vcpkg\archives
-          key: vcpkg-win-${{ runner.os }}-${{ hashFiles('**/vcpkg*.json') }}
-          restore-keys: vcpkg-win-${{ runner.os }}-
+          vcpkgJsonGlob: '**/vcpkg.json'   # expects a vcpkg.json in repo (see note below)
+          # you can add extraArgs: --clean-after-build if you want smaller cache size
 
-      - name: Bootstrap vcpkg (if cache miss)
-        if: ${{ !exists(env.VCPKG_ROOT) }}
-        run: |
-          git clone https://github.com/microsoft/vcpkg $env:VCPKG_ROOT
-          & $env:VCPKG_ROOT\bootstrap-vcpkg.bat
-
-      - name: Install deps with vcpkg
-        run: |
-          $triplet="x64-windows"
-          & $env:VCPKG_ROOT\vcpkg.exe install zlib:$triplet pthreads:$triplet
-
-      - name: Configure (CMake)
+      # --- Configure with CMake (Ninja single-config keeps outputs in one folder) ---
+      - name: Configure (CMake -> Ninja)
         run: >
           cmake -S external/cfitsio -B build\cfitsio
           -G "Ninja"
@@ -52,15 +38,15 @@ jobs:
       - name: Build
         run: cmake --build build\cfitsio --config Release -j 2
 
+      # --- Collect DLL + import lib + PDB + headers ---
       - name: Collect artifacts
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path artifacts | Out-Null
-          # Typical Ninja/VS layout from CFITSIO's CMake:
-          Copy-Item -Recurse build\cfitsio\*.dll artifacts -ErrorAction SilentlyContinue
-          Copy-Item -Recurse build\cfitsio\*.lib artifacts -ErrorAction SilentlyContinue
-          Copy-Item -Recurse build\cfitsio\*.pdb artifacts -ErrorAction SilentlyContinue
-          # Headers (so downstreams can consume the artifact easily)
+          Copy-Item build\cfitsio\*.dll artifacts -ErrorAction SilentlyContinue
+          Copy-Item build\cfitsio\*.lib artifacts -ErrorAction SilentlyContinue
+          Copy-Item build\cfitsio\*.pdb artifacts -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path artifacts\include | Out-Null
           Copy-Item -Recurse external\cfitsio\*.h artifacts\include\ -ErrorAction SilentlyContinue
 
       - name: Upload artifact
