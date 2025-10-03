@@ -77,11 +77,24 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path artifacts | Out-Null
-          Copy-Item build\cfitsio\*.dll artifacts -ErrorAction SilentlyContinue
-          Copy-Item build\cfitsio\*.lib artifacts -ErrorAction SilentlyContinue
-          Copy-Item build\cfitsio\*.pdb artifacts -ErrorAction SilentlyContinue
+
+          # Find DLL/IMPLIB/PDB anywhere under the CMake build dir
+          $bins = Get-ChildItem -Path build\cfitsio -Recurse -Include *.dll,*.lib,*.pdb -ErrorAction SilentlyContinue
+          if ($bins) {
+            $bins | Copy-Item -Destination artifacts -Force
+          } else {
+            Write-Host "No binaries found under build\cfitsio. Listing tree for debugging:"
+            Get-ChildItem -Path build\cfitsio -Recurse | Select-Object FullName
+            exit 1
+          }
+
+          # Headers
           New-Item -ItemType Directory -Force -Path artifacts\include | Out-Null
-          Copy-Item -Recurse external\cfitsio\*.h artifacts\include\ -ErrorAction SilentlyContinue
+          Get-ChildItem -Path . -File -Include fitsio.h,fitsio2.h,longnam.h | Copy-Item -Destination artifacts\include -Force
+
+          # Also include the generated export header from the build dir if present
+          $exp = Join-Path build\cfitsio 'cfitsio_export.h'
+          if (Test-Path $exp) { Copy-Item $exp artifacts\include\ -Force }
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
