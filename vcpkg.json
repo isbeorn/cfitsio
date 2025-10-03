@@ -1,8 +1,0 @@
-{
-  "name": "cfitsio-build",
-  "version-string": "1.0.0",
-  "dependencies": [
-    "zlib",
-    "pthreads"
-  ]
-}

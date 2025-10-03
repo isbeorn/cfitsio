@@ -14,7 +14,22 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Run vcpkg
+      # Create vcpkg manifest + configuration (baseline = vcpkg submodule HEAD)
+      - name: Generate vcpkg manifest & config
+        shell: pwsh
+        run: |
+          $baseline = (git -C vcpkg rev-parse HEAD).Trim()
+          @"{
+            "name": "cfitsio-build",
+            "version-string": "1.0.0",
+            "dependencies": [ "zlib", "pthreads" ],
+            "builtin-baseline": "$baseline"
+          }"@ | Out-File -Encoding utf8 -NoNewline vcpkg.json
+          @"{
+            "default-registry": { "kind": "builtin", "baseline": "$baseline" }
+          }"@ | Out-File -Encoding utf8 -NoNewline vcpkg-configuration.json
+
+      - name: Run vcpkg (manifest mode)
         uses: lukka/run-vcpkg@v11
         with:
           vcpkgJsonGlob: 'vcpkg.json'
@@ -24,10 +39,9 @@ jobs:
         with:
           arch: x64
 
-      - name: Set env vars
+      - name: Put vcpkg installed dir outside repo/build (avoids export-path issues)
         shell: pwsh
-        run: |
-          echo "VCPKG_INSTALLED_DIR=$env:RUNNER_TEMP\vcpkg_installed" >> $env:GITHUB_ENV
+        run: echo "VCPKG_INSTALLED_DIR=$env:RUNNER_TEMP\vcpkg_installed" >> $env:GITHUB_ENV
 
       - name: Configure (CMake -> VS 2022)
         shell: pwsh
