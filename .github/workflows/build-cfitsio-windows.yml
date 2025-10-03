@@ -8,26 +8,28 @@ jobs:
   build:
     runs-on: windows-latest
 
-    env:
-      # keep vcpkg's installed tree outside source/build to avoid export-path errors
-      VCPKG_INSTALLED_DIR: ${{ runner.temp }}\vcpkg_installed
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive   # if you keep repo's vcpkg submodule
+          submodules: recursive
 
-      - name: Run vcpkg (repo submodule)
+      - name: Run vcpkg
         uses: lukka/run-vcpkg@v11
         with:
           vcpkgJsonGlob: 'vcpkg.json'
 
-      # Put MSVC on PATH so 'cl' is available to CMake/Ninja
+      # Put MSVC on PATH
       - name: Setup MSVC dev command prompt
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
+
+      # Set VCPKG_INSTALLED_DIR outside source/build to avoid export-path issues
+      - name: Set env vars
+        shell: pwsh
+        run: |
+          echo "VCPKG_INSTALLED_DIR=$env:RUNNER_TEMP\vcpkg_installed" >> $env:GITHUB_ENV
 
       - name: Configure (CMake -> Ninja)
         run: >
@@ -36,7 +38,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release
           -DBUILD_SHARED_LIBS=ON
           -DUSE_SSE2=ON
-          -DUSE_SSSE3=ON
+          -DUSE_SSSE3=ONs
           -DUSE_CURL=OFF
           -DUSE_PTHREADS=ON
           -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}\scripts\buildsystems\vcpkg.cmake
