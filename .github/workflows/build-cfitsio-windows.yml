@@ -66,6 +66,11 @@ jobs:
           -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_ROOT}\scripts\buildsystems\vcpkg.cmake"
           -DVCPKG_TARGET_TRIPLET=x64-windows
           -DVCPKG_INSTALLED_DIR="${env:VCPKG_INSTALLED_DIR}"
+          -DCMAKE_THREAD_PREFER_PTHREAD=ON
+          -DTHREADS_PREFER_PTHREAD_FLAG=ON
+          -DPThreads4W_DIR="${env:VCPKG_INSTALLED_DIR}\x64-windows\share\PThreads4W"
+          -DCMAKE_C_FLAGS="/Dstrtok_r=strtok_s"
+
 
       - name: Build
         run: cmake --build build\cfitsio --config Release -j 2
