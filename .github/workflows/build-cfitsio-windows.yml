@@ -24,7 +24,7 @@ jobs:
       # --- Configure with CMake (Ninja single-config keeps outputs in one folder) ---
       - name: Configure (CMake -> Ninja)
         run: >
-          cmake -S external/cfitsio -B build\cfitsio
+          cmake -S . -B build\cfitsio
           -G "Ninja"
           -DCMAKE_BUILD_TYPE=Release
           -DBUILD_SHARED_LIBS=ON
