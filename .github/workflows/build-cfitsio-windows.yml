@@ -38,7 +38,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release
           -DBUILD_SHARED_LIBS=ON
           -DUSE_SSE2=ON
-          -DUSE_SSSE3=ONs
+          -DUSE_SSSE3=ON
           -DUSE_CURL=OFF
           -DUSE_PTHREADS=ON
           -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}\scripts\buildsystems\vcpkg.cmake
