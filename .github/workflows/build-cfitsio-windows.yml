@@ -8,27 +8,31 @@ jobs:
   build:
     runs-on: windows-latest
 
+    env:
+      # keep vcpkg's installed tree outside source/build to avoid export-path errors
+      VCPKG_INSTALLED_DIR: ${{ runner.temp }}\vcpkg_installed
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: recursive   # if you keep repo's vcpkg submodule
 
-      # Use vcpkg manifest mode (needs vcpkg.json at repo root)
-      - name: Run vcpkg
+      - name: Run vcpkg (repo submodule)
         uses: lukka/run-vcpkg@v11
         with:
-          vcpkgJsonGlob: '**/vcpkg.json' 
+          vcpkgJsonGlob: 'vcpkg.json'
 
-      - name: Configure (CMake -> Ninja, force MSVC, keep vcpkg outside src/build)
-        env:
-          # Put vcpkg_installed not under the source or build dirs:
-          VCPKG_INSTALLED_DIR: ${{ runner.temp }}\vcpkg_installed
+      # Put MSVC on PATH so 'cl' is available to CMake/Ninja
+      - name: Setup MSVC dev command prompt
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Configure (CMake -> Ninja)
         run: >
           cmake -S . -B build\cfitsio
           -G "Ninja"
-          -DCMAKE_C_COMPILER=cl.exe
-          -DCMAKE_CXX_COMPILER=cl.exe
           -DCMAKE_BUILD_TYPE=Release
           -DBUILD_SHARED_LIBS=ON
           -DUSE_SSE2=ON
