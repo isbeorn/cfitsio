@@ -2179,7 +2179,7 @@ eval:		# Rebuild eval_* files from flex/bison source
 # HEASoft packages fitsTcl and POW need a list of all .o files: ==========
 
 cfitsioLibObjs:
-	@echo ${libcfitsio_la_SOURCES:.c=.o}
+	@echo ${libcfitsio_la_SOURCES:.c=.o} ${libcfitsio_swapproc_la_SOURCES:.c=.o}
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

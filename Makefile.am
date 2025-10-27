@@ -203,4 +203,4 @@ CLEANFILES = testprog.fit testf77.fit atestfil.fit btestfil.fit y.output
 # HEASoft packages fitsTcl and POW need a list of all .o files: ==========
 
 cfitsioLibObjs:
-	@echo ${libcfitsio_la_SOURCES:.c=.o}
+	@echo ${libcfitsio_la_SOURCES:.c=.o} ${libcfitsio_swapproc_la_SOURCES:.c=.o}
