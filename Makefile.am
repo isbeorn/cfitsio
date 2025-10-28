@@ -151,6 +151,9 @@ funpack_LDADD = -lm ${LDADD}
 
 imcopy_SOURCES = utilities/imcopy.c
 
+# iter_image_SOURCES = iter_image.c
+# iter_var_SOURCES = iter_var.c
+
 smem_SOURCES = utilities/smem.c
 
 speed_SOURCES = utilities/speed.c
