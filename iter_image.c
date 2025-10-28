@@ -6,7 +6,7 @@
 /*
   This program illustrates how to use the CFITSIO iterator function.
   It reads and modifies the input 'iter_image.fit' image file by dividing
-  all the pixel values by a factor of 100 (DESTROYING THE ORIGINAL IMAGE!!!)
+  all the pixel values by a factor of 10 (DESTROYING THE ORIGINAL IMAGE!!!)
 */
 int main(int argc, char *argv[])
 {
@@ -75,7 +75,7 @@ int div_image(long totalrows, long offset, long firstrow, long nrows,
 
     for (int ii = 1; ii <= nrows; ii++)
     {
-       counts[ii] /= 100 ;
+       counts[ii] /= 10 ;
     }
     printf("firstrows, nrows = %ld %ld\n", firstrow, nrows);
 
