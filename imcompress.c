@@ -2217,8 +2217,8 @@ int imcomp_compress_tile (fitsfile *outfptr,
         ffpclb(outfptr, (outfptr->Fptr)->cn_gzip_data, row, 1,
              gzip_nelem, (unsigned char *) cbuf, status);
 
-        /* we must zero out existing compressed data if it exists. */
-        /* otherwise on read this data is read ahead of the gzipped */
+        /* We must zero out existing compressed data if it exists. */
+        /* Otherwise on read this data is read ahead of the gzipped */
         /* data and will cause a bug. */
         LONGLONG _test_nelemll, _test_offset;
         ffgdesll(outfptr, (outfptr->Fptr)->cn_compressed, row, &_test_nelemll, &_test_offset, 
