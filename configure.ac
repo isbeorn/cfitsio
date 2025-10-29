@@ -146,6 +146,13 @@ AC_ARG_ENABLE(
   [ if test $enableval = yes; then SSE_FLAGS="$SSE_FLAGS -mssse3"; fi ]
 )
 
+AC_ARG_ENABLE(
+  iterprogs,
+  [AS_HELP_STRING([--enable-iterprogs],[Build the programs that test the CFITSIO iterator function])],
+  [ if test $enableval = yes; then ITER_PROGS=yes; fi ]
+)
+AM_CONDITIONAL(BUILD_ITER, test x$ITER_PROGS = xyes)
+
 SYMBOLS=""
 AC_ARG_ENABLE(
   symbols,

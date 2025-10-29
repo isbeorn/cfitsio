@@ -151,9 +151,6 @@ funpack_LDADD = -lm ${LDADD}
 
 imcopy_SOURCES = utilities/imcopy.c
 
-# iter_image_SOURCES = iter_image.c
-# iter_var_SOURCES = iter_var.c
-
 smem_SOURCES = utilities/smem.c
 
 speed_SOURCES = utilities/speed.c
@@ -168,6 +165,14 @@ if !NOFORTRAN
 
 noinst_PROGRAMS+= testf77
 testf77_SOURCES = utilities/testf77.f
+
+endif
+
+if BUILD_ITER
+
+noinst_PROGRAMS+= iter_image iter_var
+iter_image_SOURCES = utilities/iter_image.c
+iter_var_SOURCES = utilities/iter_var.c
 
 endif
 
