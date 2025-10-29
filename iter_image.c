@@ -10,7 +10,9 @@
 */
 int main(int argc, char *argv[])
 {
-    extern int div_image(); /* external work function is passed to the iterator */
+    /* external work function is passed to the iterator: */
+    extern int div_image(long totalrows, long offset, long firstrow,
+	   long nrows, int ncols, iteratorCol *cols, void *user_strct);
     fitsfile *fptr;
     iteratorCol cols[3];  /* structure used by the iterator function */
     int n_cols =1;
