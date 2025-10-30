@@ -5337,8 +5337,11 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
                (infptr->Fptr)->quantize_method = NO_DITHER;
                (infptr->Fptr)->quantize_level = 0;
            } else {
-               (infptr->Fptr)->quantize_method = 0;
-               (infptr->Fptr)->quantize_level = 0;
+               /* This is an invalid ZQUANTIZ key or an old CFITSIO */
+               /* encountering some future standard key. */
+               ffpmsg("Unknown quantization type:");
+               ffpmsg(value);
+	           return (*status = DATA_DECOMPRESSION_ERR);
            }
        }
     }
