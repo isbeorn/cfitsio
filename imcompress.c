@@ -5319,7 +5319,7 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
        tstatus = 0;
        if (ffgky(infptr, TSTRING, "ZQUANTIZ", value, NULL, &tstatus) > 0)
        {
-           (infptr->Fptr)->quantize_method = 0;
+           (infptr->Fptr)->quantize_method = NO_DITHER;
            (infptr->Fptr)->quantize_level = 0;
        } else {
            /* Note that we need to set quantize_level to something other than */
