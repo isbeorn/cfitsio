@@ -5314,24 +5314,32 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
     }
     else {
        /* get the floating point to integer quantization type, if present. */
-       /* FITS files produced before 2009 will not have this keyword */
+       /* FITS files produced before 2009 will not have this keyword. */
+       /* NO_DITHER should be treated as the default if it is not present. */
        tstatus = 0;
        if (ffgky(infptr, TSTRING, "ZQUANTIZ", value, NULL, &tstatus) > 0)
        {
            (infptr->Fptr)->quantize_method = 0;
            (infptr->Fptr)->quantize_level = 0;
        } else {
-
+           /* Note that we need to set quantize_level to something other than */
+           /* NO_QUANTIZE, since that would cause quantize_method to be ignored, */
+           /* and it might already be set from a different HDU. */
            if (!FSTRCMP(value, "NONE") ) {
                (infptr->Fptr)->quantize_level = NO_QUANTIZE;
-	  } else if (!FSTRCMP(value, "SUBTRACTIVE_DITHER_1") )
+	       } else if (!FSTRCMP(value, "SUBTRACTIVE_DITHER_1") ) {
                (infptr->Fptr)->quantize_method = SUBTRACTIVE_DITHER_1;
-           else if (!FSTRCMP(value, "SUBTRACTIVE_DITHER_2") )
+               (infptr->Fptr)->quantize_level = 0;
+           } else if (!FSTRCMP(value, "SUBTRACTIVE_DITHER_2") ) {
                (infptr->Fptr)->quantize_method = SUBTRACTIVE_DITHER_2;
-           else if (!FSTRCMP(value, "NO_DITHER") )
+               (infptr->Fptr)->quantize_level = 0;
+           } else if (!FSTRCMP(value, "NO_DITHER") ) {
                (infptr->Fptr)->quantize_method = NO_DITHER;
-           else
+               (infptr->Fptr)->quantize_level = 0;
+           } else {
                (infptr->Fptr)->quantize_method = 0;
+               (infptr->Fptr)->quantize_level = 0;
+           }
        }
     }
 
