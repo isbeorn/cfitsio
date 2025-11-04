@@ -104,8 +104,9 @@ target_triplet = @target@
 bin_PROGRAMS = cookbook$(EXEEXT) fitscopy$(EXEEXT) fitsverify$(EXEEXT) \
 	fpack$(EXEEXT) funpack$(EXEEXT) imcopy$(EXEEXT) smem$(EXEEXT) \
 	speed$(EXEEXT)
-noinst_PROGRAMS = testprog$(EXEEXT) $(am__EXEEXT_1)
+noinst_PROGRAMS = testprog$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
 @NOFORTRAN_FALSE@am__append_3 = testf77
+@BUILD_ITER_TRUE@am__append_4 = iter_image iter_var
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
@@ -124,6 +125,7 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(libdir)" \
 	"$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(includedir)"
 @NOFORTRAN_FALSE@am__EXEEXT_1 = testf77$(EXEEXT)
+@BUILD_ITER_TRUE@am__EXEEXT_2 = iter_image$(EXEEXT) iter_var$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -254,6 +256,17 @@ am_imcopy_OBJECTS = utilities/imcopy.$(OBJEXT)
 imcopy_OBJECTS = $(am_imcopy_OBJECTS)
 imcopy_LDADD = $(LDADD)
 imcopy_DEPENDENCIES = libcfitsio.la $(am__DEPENDENCIES_1)
+am__iter_image_SOURCES_DIST = utilities/iter_image.c
+@BUILD_ITER_TRUE@am_iter_image_OBJECTS =  \
+@BUILD_ITER_TRUE@	utilities/iter_image.$(OBJEXT)
+iter_image_OBJECTS = $(am_iter_image_OBJECTS)
+iter_image_LDADD = $(LDADD)
+iter_image_DEPENDENCIES = libcfitsio.la $(am__DEPENDENCIES_1)
+am__iter_var_SOURCES_DIST = utilities/iter_var.c
+@BUILD_ITER_TRUE@am_iter_var_OBJECTS = utilities/iter_var.$(OBJEXT)
+iter_var_OBJECTS = $(am_iter_var_OBJECTS)
+iter_var_LDADD = $(LDADD)
+iter_var_DEPENDENCIES = libcfitsio.la $(am__DEPENDENCIES_1)
 am_smem_OBJECTS = utilities/smem.$(OBJEXT)
 smem_OBJECTS = $(am_smem_OBJECTS)
 smem_LDADD = $(LDADD)
@@ -362,8 +375,9 @@ am__depfiles_remade = ./$(DEPDIR)/libcfitsio_la-buffers.Plo \
 	utilities/$(DEPDIR)/fitsverify-fvrf_misc.Po \
 	utilities/$(DEPDIR)/fpack.Po utilities/$(DEPDIR)/fpackutil.Po \
 	utilities/$(DEPDIR)/funpack.Po utilities/$(DEPDIR)/imcopy.Po \
-	utilities/$(DEPDIR)/smem.Po utilities/$(DEPDIR)/speed.Po \
-	utilities/$(DEPDIR)/testprog.Po
+	utilities/$(DEPDIR)/iter_image.Po \
+	utilities/$(DEPDIR)/iter_var.Po utilities/$(DEPDIR)/smem.Po \
+	utilities/$(DEPDIR)/speed.Po utilities/$(DEPDIR)/testprog.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -401,13 +415,14 @@ am__v_F77LD_1 =
 SOURCES = $(libcfitsio_la_SOURCES) $(libcfitsio_swapproc_la_SOURCES) \
 	$(cookbook_SOURCES) $(fitscopy_SOURCES) $(fitsverify_SOURCES) \
 	$(fpack_SOURCES) $(funpack_SOURCES) $(imcopy_SOURCES) \
-	$(smem_SOURCES) $(speed_SOURCES) $(testf77_SOURCES) \
-	$(testprog_SOURCES)
+	$(iter_image_SOURCES) $(iter_var_SOURCES) $(smem_SOURCES) \
+	$(speed_SOURCES) $(testf77_SOURCES) $(testprog_SOURCES)
 DIST_SOURCES = $(am__libcfitsio_la_SOURCES_DIST) \
 	$(libcfitsio_swapproc_la_SOURCES) $(cookbook_SOURCES) \
 	$(fitscopy_SOURCES) $(fitsverify_SOURCES) $(fpack_SOURCES) \
-	$(funpack_SOURCES) $(imcopy_SOURCES) $(smem_SOURCES) \
-	$(speed_SOURCES) $(am__testf77_SOURCES_DIST) \
+	$(funpack_SOURCES) $(imcopy_SOURCES) \
+	$(am__iter_image_SOURCES_DIST) $(am__iter_var_SOURCES_DIST) \
+	$(smem_SOURCES) $(speed_SOURCES) $(am__testf77_SOURCES_DIST) \
 	$(testprog_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -658,6 +673,8 @@ speed_SOURCES = utilities/speed.c
 testprog_SOURCES = utilities/testprog.c
 LDADD = libcfitsio.la ${LIBS}
 @NOFORTRAN_FALSE@testf77_SOURCES = utilities/testf77.f
+@BUILD_ITER_TRUE@iter_image_SOURCES = utilities/iter_image.c
+@BUILD_ITER_TRUE@iter_var_SOURCES = utilities/iter_var.c
 
 # eval: ==================================================================
 FLEX = flex
@@ -871,6 +888,18 @@ utilities/imcopy.$(OBJEXT): utilities/$(am__dirstamp) \
 imcopy$(EXEEXT): $(imcopy_OBJECTS) $(imcopy_DEPENDENCIES) $(EXTRA_imcopy_DEPENDENCIES) 
 	@rm -f imcopy$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(imcopy_OBJECTS) $(imcopy_LDADD) $(LIBS)
+utilities/iter_image.$(OBJEXT): utilities/$(am__dirstamp) \
+	utilities/$(DEPDIR)/$(am__dirstamp)
+
+iter_image$(EXEEXT): $(iter_image_OBJECTS) $(iter_image_DEPENDENCIES) $(EXTRA_iter_image_DEPENDENCIES) 
+	@rm -f iter_image$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(iter_image_OBJECTS) $(iter_image_LDADD) $(LIBS)
+utilities/iter_var.$(OBJEXT): utilities/$(am__dirstamp) \
+	utilities/$(DEPDIR)/$(am__dirstamp)
+
+iter_var$(EXEEXT): $(iter_var_OBJECTS) $(iter_var_DEPENDENCIES) $(EXTRA_iter_var_DEPENDENCIES) 
+	@rm -f iter_var$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(iter_var_OBJECTS) $(iter_var_LDADD) $(LIBS)
 utilities/smem.$(OBJEXT): utilities/$(am__dirstamp) \
 	utilities/$(DEPDIR)/$(am__dirstamp)
 
@@ -981,6 +1010,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/fpackutil.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/funpack.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/imcopy.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/iter_image.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/iter_var.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/smem.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/speed.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/testprog.Po@am__quote@ # am--include-marker
@@ -1979,6 +2010,8 @@ distclean: distclean-am
 	-rm -f utilities/$(DEPDIR)/fpackutil.Po
 	-rm -f utilities/$(DEPDIR)/funpack.Po
 	-rm -f utilities/$(DEPDIR)/imcopy.Po
+	-rm -f utilities/$(DEPDIR)/iter_image.Po
+	-rm -f utilities/$(DEPDIR)/iter_var.Po
 	-rm -f utilities/$(DEPDIR)/smem.Po
 	-rm -f utilities/$(DEPDIR)/speed.Po
 	-rm -f utilities/$(DEPDIR)/testprog.Po
@@ -2108,6 +2141,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f utilities/$(DEPDIR)/fpackutil.Po
 	-rm -f utilities/$(DEPDIR)/funpack.Po
 	-rm -f utilities/$(DEPDIR)/imcopy.Po
+	-rm -f utilities/$(DEPDIR)/iter_image.Po
+	-rm -f utilities/$(DEPDIR)/iter_var.Po
 	-rm -f utilities/$(DEPDIR)/smem.Po
 	-rm -f utilities/$(DEPDIR)/speed.Po
 	-rm -f utilities/$(DEPDIR)/testprog.Po
@@ -2179,7 +2214,7 @@ eval:		# Rebuild eval_* files from flex/bison source
 # HEASoft packages fitsTcl and POW need a list of all .o files: ==========
 
 cfitsioLibObjs:
-	@echo ${libcfitsio_la_SOURCES:.c=.o}
+	@echo ${libcfitsio_la_SOURCES:.c=.o} ${libcfitsio_swapproc_la_SOURCES:.c=.o}
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

@@ -168,6 +168,14 @@ testf77_SOURCES = utilities/testf77.f
 
 endif
 
+if BUILD_ITER
+
+noinst_PROGRAMS+= iter_image iter_var
+iter_image_SOURCES = utilities/iter_image.c
+iter_var_SOURCES = utilities/iter_var.c
+
+endif
+
 # eval: ==================================================================
 
 FLEX =		flex
@@ -203,4 +211,4 @@ CLEANFILES = testprog.fit testf77.fit atestfil.fit btestfil.fit y.output
 # HEASoft packages fitsTcl and POW need a list of all .o files: ==========
 
 cfitsioLibObjs:
-	@echo ${libcfitsio_la_SOURCES:.c=.o}
+	@echo ${libcfitsio_la_SOURCES:.c=.o} ${libcfitsio_swapproc_la_SOURCES:.c=.o}

@@ -256,8 +256,10 @@ static int encode64(unsigned s_len, char *src, unsigned d_len, char *dst);
 static int ssl_get_with_curl(char *url, curlmembuf* buffer, 
                 char* username, char* password);
 static size_t curlToMemCallback(void *buffer, size_t size, size_t nmemb, void *userp);
+#ifdef CFITSIO_HAVE_CURL
 static int curlProgressCallback(void *clientp, curl_off_t dltotal, curl_off_t dlnow,
                            curl_off_t ultotal, curl_off_t ulnow);
+#endif
 
 /***************************/
 /* Static variables */
@@ -1282,6 +1284,7 @@ size_t curlToMemCallback(void *buffer, size_t size, size_t nmemb, void *userp)
 
 /*--------------------------------------------------------------------------*/
 /* Callback function for displaying status bar during download */
+#ifdef CFITSIO_HAVE_CURL
 int curlProgressCallback(void *clientp, curl_off_t dltotal, curl_off_t dlnow,
       curl_off_t ultotal, curl_off_t ulnow)
 {
@@ -1338,6 +1341,7 @@ int curlProgressCallback(void *clientp, curl_off_t dltotal, curl_off_t dlnow,
    }
    return 0;
 }
+#endif
 
 /*--------------------------------------------------------------------------*/
 int https_open_network(char *filename, curlmembuf* buffer)
