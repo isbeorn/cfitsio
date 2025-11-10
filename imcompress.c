@@ -1340,7 +1340,7 @@ int imcomp_init_table(fitsfile *outfptr,
               ffpky(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->request_dither_seed), 
 	       "dithering offset when quantizing floats", status);
  
-            } else if ((outfptr->Fptr)->request_quantize_method == SUBTRACTIVE_DITHER_2) {
+        } else if ((outfptr->Fptr)->request_quantize_method == SUBTRACTIVE_DITHER_2) {
 	      ffpkys(outfptr, "ZQUANTIZ", "SUBTRACTIVE_DITHER_2", 
 	        "Pixel Quantization Algorithm", status);
 
@@ -1349,15 +1349,7 @@ int imcomp_init_table(fitsfile *outfptr,
               ffpky(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->request_dither_seed), 
 	       "dithering offset when quantizing floats", status);
 
-	      if (!strcmp(zcmptype, "RICE_1"))  {
-	        /* when using this new dithering method, change the compression type */
-		/* to an alias, so that old versions of funpack will not be able to */
-		/* created a corrupted uncompressed image. */
-		/* ******* can remove this cludge after about June 2015, after most old versions of fpack are gone */
-        	strcpy(zcmptype, "RICE_ONE");
-	      }
-
-            } else if ((outfptr->Fptr)->request_quantize_method == NO_DITHER) {
+        } else if ((outfptr->Fptr)->request_quantize_method == NO_DITHER) {
 	      ffpkys(outfptr, "ZQUANTIZ", "NO_DITHER", 
 	        "No dithering during quantization", status);
 	    }
@@ -2216,6 +2208,17 @@ int imcomp_compress_tile (fitsfile *outfptr,
 	/* Write the compressed byte stream. */
         ffpclb(outfptr, (outfptr->Fptr)->cn_gzip_data, row, 1,
              gzip_nelem, (unsigned char *) cbuf, status);
+
+        /* We must zero out existing compressed data if it exists. */
+        /* Otherwise, on read this data is read ahead of the gzipped */
+        /* data and will cause a bug. */
+        LONGLONG _test_nelemll, _test_offset;
+        ffgdesll(outfptr, (outfptr->Fptr)->cn_compressed, row, &_test_nelemll, &_test_offset, 
+            status);
+        if (_test_nelemll) {
+            ffpclb(outfptr, (outfptr->Fptr)->cn_compressed, row, 1,
+                0, NULL, status);
+        }
 
         free(cbuf);  /* finished with this buffer */
     }
