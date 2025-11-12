@@ -1418,7 +1418,7 @@ int fffr4r8(float *input,         /* I - array of values to be converted     */
                         nullarray[ii] = 1;
                   }
                   else            /* it's an underflow */
-                     output[ii] = (double) input[ii];
+                     output[ii] = 0;
               }
               else
                 output[ii] = (double) input[ii];
@@ -1439,7 +1439,7 @@ int fffr4r8(float *input,         /* I - array of values to be converted     */
                         nullarray[ii] = 1;
                   }
                   else            /* it's an underflow */
-                     output[ii] = input[ii] * scale + zero;
+                     output[ii] = zero;
               }
               else
                   output[ii] = input[ii] * scale + zero;
@@ -1519,7 +1519,7 @@ int fffr8r8(double *input,        /* I - array of values to be converted     */
                     }
                   }
                   else            /* it's an underflow */
-                     output[ii] = input[ii];
+                     output[ii] = 0;
               }
               else
                   output[ii] = input[ii];
@@ -1544,7 +1544,7 @@ int fffr8r8(double *input,        /* I - array of values to be converted     */
                     }
                   }
                   else            /* it's an underflow */
-                     output[ii] = input[ii] * scale + zero;
+                     output[ii] = zero;
               }
               else
                   output[ii] = input[ii] * scale + zero;
