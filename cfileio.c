@@ -4039,7 +4039,7 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
     int ii, driver, slen, clobber = 0;
     char *url;
     char urltype[MAX_PREFIX_LEN], outfile[FLEN_FILENAME];
-    char tmplfile[FLEN_FILENAME], compspec[80];
+    char tmplfile[FLEN_FILENAME], compspec[FLEN_FILENAME];
     int handle, create_disk_file = 0;
 
     *fptr = 0;              /* initialize null file pointer, */
