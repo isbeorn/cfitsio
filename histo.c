@@ -192,6 +192,13 @@ int ffbinse(char *binspec,   /* I - binning specification */
                 ptr++;
 
             slen = strcspn(ptr, " ,)");
+            if (slen >= FLEN_VALUE)
+            {
+                ffpmsg("column name too long in binning specification");
+                ffpmsg(binspec);
+                if( file_expr ) free( file_expr );
+                return(*status = URL_PARSE_ERROR);
+            }
             strncat(colname[ii], ptr, slen); /* copy 1st column name */
 
             ptr += slen;
@@ -804,7 +811,6 @@ int ffhist2e(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
 
       weight = DOUBLENULLVALUE;
       wtrepeat = nelem;
-      wtdatatype = wtdatatype;
 
     }
     else

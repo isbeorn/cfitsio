@@ -671,6 +671,8 @@ F77
 INSTALL_ROOT
 NOGSIFTP_FALSE
 NOGSIFTP_TRUE
+BUILD_ITER_FALSE
+BUILD_ITER_TRUE
 version_info
 LT_SYS_LIBRARY_PATH
 OTOOL64
@@ -818,6 +820,7 @@ enable_curl
 enable_reentrant
 enable_sse2
 enable_ssse3
+enable_iterprogs
 enable_symbols
 enable_hera
 with_bzip2
@@ -1491,6 +1494,8 @@ Optional Features:
                           instruction set
   --enable-ssse3          Enable use of instructions in the SSSE3 extended
                           instruction set
+  --enable-iterprogs      Build the programs that test the CFITSIO iterator
+                          function
   --enable-symbols        Enable debugging symbols by turning optimization off
   --enable-hera           Build for HERA (ASD use only)
 
@@ -15427,6 +15432,22 @@ then :
 fi
 
 
+# Check whether --enable-iterprogs was given.
+if test ${enable_iterprogs+y}
+then :
+  enableval=$enable_iterprogs;  if test $enableval = yes; then ITER_PROGS=yes; fi
+
+fi
+
+ if test x$ITER_PROGS = xyes; then
+  BUILD_ITER_TRUE=
+  BUILD_ITER_FALSE='#'
+else
+  BUILD_ITER_TRUE='#'
+  BUILD_ITER_FALSE=
+fi
+
+
 SYMBOLS=""
 # Check whether --enable-symbols was given.
 if test ${enable_symbols+y}
@@ -15641,7 +15662,7 @@ ac_compile='$F77 -c $FFLAGS conftest.$ac_ext >&5'
 ac_link='$F77 -o conftest$ac_exeext $FFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_f77_compiler_gnu
 if test -n "$ac_tool_prefix"; then
-  for ac_prog in g77 xlf f77 frt pgf77 cf77 fort77 fl32 af77 xlf90 f90 pgf90 pghpf epcf90 gfortran g95 xlf95 f95 fort ifort ifc efc pgfortran pgf95 lf95 ftn nagfor
+  for ac_prog in gfortran g95 g77 f77 ifort f95 f90 xlf cf77 gf77 af77 ncf f2c
   do
     # Extract the first word of "$ac_tool_prefix$ac_prog", so it can be a program name with args.
 set dummy $ac_tool_prefix$ac_prog; ac_word=$2
@@ -15691,7 +15712,7 @@ fi
 fi
 if test -z "$F77"; then
   ac_ct_F77=$F77
-  for ac_prog in g77 xlf f77 frt pgf77 cf77 fort77 fl32 af77 xlf90 f90 pgf90 pghpf epcf90 gfortran g95 xlf95 f95 fort ifort ifc efc pgfortran pgf95 lf95 ftn nagfor
+  for ac_prog in gfortran g95 g77 f77 ifort f95 f90 xlf cf77 gf77 af77 ncf f2c
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -19426,7 +19447,6 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
-  #AC_CHECK_PROGS(FC, gfortran g95 g77 f77 ifort f95 f90 xlf cf77 gf77 af77 ncf f2c, notfound)
   if test "x$F77" != "x" ; then
      #FC_BASENAME=`basename $FC`
      FC_BASENAME=`basename $F77`
@@ -20589,6 +20609,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__fastdepCC_TRUE}" && test -z "${am__fastdepCC_FALSE}"; then
   as_fn_error $? "conditional \"am__fastdepCC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_ITER_TRUE}" && test -z "${BUILD_ITER_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_ITER\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${NOGSIFTP_TRUE}" && test -z "${NOGSIFTP_FALSE}"; then
@@ -22973,6 +22997,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__fastdepCC_TRUE}" && test -z "${am__fastdepCC_FALSE}"; then
   as_fn_error $? "conditional \"am__fastdepCC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_ITER_TRUE}" && test -z "${BUILD_ITER_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_ITER\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${NOGSIFTP_TRUE}" && test -z "${NOGSIFTP_FALSE}"; then

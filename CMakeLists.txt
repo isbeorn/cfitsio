@@ -56,6 +56,8 @@ OPTION(USE_PTHREADS "Thread-safe build (using pthreads)" OFF)
 
 OPTION(TESTS "Build test programs Testprog and cookbook" ON)
 
+OPTION(ITERPROGS "Build programs that test the CFITSIO iterator function" OFF)
+
 OPTION(UTILS "Build helper programs [fpack, funpack, fitscopy, fitsverify, imcopy, smem, speed]" ON)
 
 OPTION(USE_SSE2 "Enable use of instructions in the SSE2 extended instruction set" OFF)
@@ -384,6 +386,22 @@ IF (TESTS)
     install(TARGETS cookbook RUNTIME DESTINATION bin)
 
 ENDIF(TESTS)
+
+IF (ITERPROGS)
+
+    ADD_EXECUTABLE(Iter_Image utilities/iter_image.c)
+    TARGET_LINK_LIBRARIES(Iter_Image ${LIB_NAME})
+    #ADD_TEST(Iter_Image Iter_Image)
+    #install(TARGETS Iter_Image RUNTIME DESTINATION bin)
+    FILE(COPY ${CMAKE_SOURCE_DIR}/iter_image.fit DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+    ADD_EXECUTABLE(Iter_Var utilities/iter_var.c)
+    TARGET_LINK_LIBRARIES(Iter_Var ${LIB_NAME})
+    #ADD_TEST(Iter_Var Iter_Var)
+    #install(TARGETS Iter_Var RUNTIME DESTINATION bin)
+    FILE(COPY ${CMAKE_SOURCE_DIR}/vari.fits DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+ENDIF(ITERPROGS)
 
 #==============================================================================
 # Utilities:
