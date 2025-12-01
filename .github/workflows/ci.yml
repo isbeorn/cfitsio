@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, macos-13]  # Define multiple runners to use
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]  # Define multiple runners to use
     steps:
       - uses: actions/checkout@v4
       - run: echo "Running on ${{ matrix.os }}"
