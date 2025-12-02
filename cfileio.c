@@ -6507,7 +6507,7 @@ int ffifile2(char *url,       /* input filename */
 	  if (*ptr3 == '@') hasAt = 1;
 
 	  /* Check for overflow; add extra 4 characters if we have pre-existing expression */
-  	  if (strlen(rowfilterx) + (ptr2-ptr1 + (*rowfilterx)?4:0) > FLEN_FILENAME - 1) {
+  	  if (strlen(rowfilterx) + (ptr2-ptr1-1) + ((*rowfilterx)?4:0) > FLEN_FILENAME - 1) {
 	      free(infile);
 	      return(*status = URL_PARSE_ERROR);
 	  }
