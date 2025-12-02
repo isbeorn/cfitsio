@@ -7136,7 +7136,7 @@ int ffexts(char *extspec,
             return(*status = URL_PARSE_ERROR);
         }
 
-	if (ptr2 - ptr1 > FLEN_FILENAME - 1)
+	if (ptr2 - ptr1 > FLEN_VALUE - 1)
 	{
             return(*status = URL_PARSE_ERROR); 
         }
