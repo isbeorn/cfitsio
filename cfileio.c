@@ -4039,7 +4039,7 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
     int ii, driver, slen, clobber = 0;
     char *url;
     char urltype[MAX_PREFIX_LEN], outfile[FLEN_FILENAME];
-    char tmplfile[FLEN_FILENAME], compspec[80];
+    char tmplfile[FLEN_FILENAME], compspec[FLEN_FILENAME];
     int handle, create_disk_file = 0;
 
     *fptr = 0;              /* initialize null file pointer, */
@@ -6507,7 +6507,7 @@ int ffifile2(char *url,       /* input filename */
 	  if (*ptr3 == '@') hasAt = 1;
 
 	  /* Check for overflow; add extra 4 characters if we have pre-existing expression */
-  	  if (strlen(rowfilterx) + (ptr2-ptr1 + (*rowfilterx)?4:0) > FLEN_FILENAME - 1) {
+  	  if (strlen(rowfilterx) + (ptr2-ptr1-1) + ((*rowfilterx)?4:0) > FLEN_FILENAME - 1) {
 	      free(infile);
 	      return(*status = URL_PARSE_ERROR);
 	  }
