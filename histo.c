@@ -2140,6 +2140,22 @@ int fits_calc_binningde(
            (amin[ii] < amax[ii] && binsize[ii] < 0. ) )
           binsize[ii] =  -binsize[ii];  /* reverse the sign of binsize */
 
+      if (binsize[ii] == 0.)
+      {
+        ffpmsg("error: computed histogram binsize = 0");
+        if (colexpr && colexpr[ii] && colexpr[ii][0])
+        {
+          ffpmsg("binning expression:");
+          ffpmsg(colexpr[ii]);
+        }
+        else if (colname[ii][0])
+        {
+          ffpmsg("binning column:");
+          ffpmsg(colname[ii]);
+        }
+        return(*status = ZERO_SCALE);
+      }
+
 
       ibin = (int) binsize[ii];
       imin = (int) amin[ii];
