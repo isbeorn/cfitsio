@@ -1231,7 +1231,7 @@ int ffiter(int n_cols,
     if (*status > 0)
         return(*status);
 
-    if (n_cols  <= 0 || n_cols > 999 )
+    if (n_cols  < 0 || n_cols > 999 )
     {
         ffpmsg("Illegal number of columms (ffiter)");
         return(*status = BAD_COL_NUM);  
