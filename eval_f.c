@@ -870,6 +870,10 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
    } else {
       lexpr = strlen(expr);
       lParse->expr = (char*)malloc( (2+lexpr)*sizeof(char));
+      if (!lParse->expr) {
+         ffpmsg("memory allocation failed (ffiprs)");
+         return (*status = MEMORY_ALLOCATION);
+      }
       strcpy(lParse->expr,expr);
    }
    strcat(lParse->expr + lexpr,"\n");
@@ -937,6 +941,7 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
    }
    lParse->datatype = *datatype;
    FREE(lParse->expr);
+   lParse->expr = 0;
 
    if( result->operation==CONST_OP ) *nelem = - *nelem;
    return(*status);
@@ -949,6 +954,11 @@ void ffcprs( ParseData *lParse )
 /*--------------------------------------------------------------------------*/
 {
    int col, node, i;
+
+   if (lParse->expr) {
+      free(lParse->expr);
+      lParse->expr = 0;
+   }
 
    if( lParse->nCols > 0 ) {
       FREE( lParse->colData  );
