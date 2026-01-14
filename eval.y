@@ -2079,9 +2079,14 @@ static int Close_Vec( ParseData *lParse, int vecNode )
 
    this = lParse->Nodes + vecNode;
    for( n=0; n < this->nSubNodes; n++ ) {
-      if( TYPE( this->SubNodes[n] ) != this->type ) {
-	 this->SubNodes[n] = New_Unary( lParse, this->type, 0, this->SubNodes[n] );
-	 if( this->SubNodes[n]<0 ) return(-1);
+      int subnode = this->SubNodes[n];
+      if( TYPE( subnode ) != this->type ) {
+         /* New_Unary may change the lParse->Nodes pointer if 
+            it performs a realloc. Therefore reset 'this' just in case. */
+	 subnode = New_Unary( lParse, this->type, 0, this->SubNodes[n] );
+	 if( subnode<0 ) return(-1);
+         this = lParse->Nodes + vecNode;
+         this->SubNodes[n] = subnode;
       }
       nelem += SIZE(this->SubNodes[n]);
    }
