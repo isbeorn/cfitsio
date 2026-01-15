@@ -654,6 +654,7 @@ ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
+BUILD_REENTRANT
 my_shmem
 LIBPRE
 FC
@@ -3712,6 +3713,10 @@ fi
 
 
 
+
+
+
+AM_DEFAULT_VERBOSITY=0
 
 
 
@@ -20349,6 +20354,7 @@ esac
 fi
 
 fi
+
 
 # -------------------------------------------------------------------------
 # there are some idiosyncrasies with semun defs (used in semxxx). Solaris
