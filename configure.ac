@@ -32,6 +32,7 @@ AC_CANONICAL_TARGET([])
 #AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_SRCDIR([fitscore.c])
 AM_INIT_AUTOMAKE([foreign])
+AM_SILENT_RULES([yes])
 AM_MAINTAINER_MODE
 
 LT_INIT
@@ -591,6 +592,7 @@ if test "x$BUILD_REENTRANT" = xyes; then
   fi
   AC_CHECK_LIB([pthread],[main],[],[AC_MSG_ERROR(Unable to locate pthread library needed when enabling reentrant multithreading)])
 fi
+AC_SUBST(BUILD_REENTRANT)
 
 # -------------------------------------------------------------------------
 # there are some idiosyncrasies with semun defs (used in semxxx). Solaris
