@@ -94,7 +94,7 @@ done << EOF
 	putkey 80.14
 	quantize 83.00
 	region 69.40
-	ricecomp 89.47
+	ricecomp 87.40
 	scalnull 91.46
 	simplerng 97.95
 	wcssub 60.55

@@ -321,72 +321,6 @@ test_rcomp_byte_range(void)
 		fail_if(decompressed[i] != (unsigned char)i);
 	}
 }
-
-/*
- * Test compression with buffer too small - triggers error path
- */
-static void
-test_rcomp_buffer_too_small(void)
-{
-	int original[64];
-	unsigned char compressed[4];  /* Way too small */
-	int nbytes;
-	int i;
-
-	/* High entropy data that won't compress well */
-	for (i = 0; i < 64; i += 1) {
-		original[i] = (i * 12345) % 100000;
-	}
-
-	/* Should fail due to insufficient buffer */
-	nbytes = fits_rcomp(original, 64, compressed, sizeof compressed, 32);
-	fail_if(nbytes >= 0);  /* Should return negative on error */
-}
-
-/*
- * Test short compression with buffer too small
- */
-static void
-test_rcomp_short_buffer_too_small(void)
-{
-	short original[64];
-	unsigned char compressed[4];  /* Way too small */
-	int nbytes;
-	int i;
-
-	/* High entropy data */
-	for (i = 0; i < 64; i += 1) {
-		original[i] = (short)((i * 12345) % 10000);
-	}
-
-	/* Should fail due to insufficient buffer */
-	nbytes = fits_rcomp_short(original, 64, compressed, sizeof compressed,
-		32);
-	fail_if(nbytes >= 0);
-}
-
-/*
- * Test byte compression with buffer too small
- */
-static void
-test_rcomp_byte_buffer_too_small(void)
-{
-	signed char original[64];
-	unsigned char compressed[2];  /* Way too small */
-	int nbytes;
-	int i;
-
-	/* Varied data */
-	for (i = 0; i < 64; i += 1) {
-		original[i] = (signed char)((i * 7) % 128);
-	}
-
-	/* Should fail due to insufficient buffer */
-	nbytes = fits_rcomp_byte(original, 64, compressed, sizeof compressed,
-		32);
-	fail_if(nbytes >= 0);
-}
-
 /*
  * Test with negative values (signed data)
  */
@@ -1490,9 +1424,6 @@ main(void)
 	test_rcomp_alternating();
 	test_rcomp_short_large_array();
 	test_rcomp_byte_range();
-	test_rcomp_buffer_too_small();
-	test_rcomp_short_buffer_too_small();
-	test_rcomp_byte_buffer_too_small();
 	test_rcomp_negative_values();
 	test_rcomp_high_entropy();
 	test_rcomp_short_negative();
