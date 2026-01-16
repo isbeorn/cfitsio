@@ -428,7 +428,7 @@ test_rcomp_high_entropy(void)
 
 	/* Pseudo-random data with large differences */
 	for (i = 0; i < 64; i += 1) {
-		original[i] = ((i * 1103515245 + 12345) >> 16) & 0x7FFF;
+		original[i] = (((unsigned)i * 1103515245U + 12345U) >> 16) & 0x7FFF;
 	}
 
 	nbytes = fits_rcomp(original, 64, compressed, sizeof compressed, 32);
