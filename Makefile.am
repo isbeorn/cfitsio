@@ -1,8 +1,8 @@
 ## Process this file with automake to produce Makefile.in
-#
-# CFITSIO Makefile.am
-#
-# Author: B.Irby (NASA/GSFC), based on the previous CFITSIO Makefile.in
+##
+## CFITSIO Makefile.am
+##
+## Author: B.Irby (NASA/GSFC), based on the previous CFITSIO Makefile.in
 
 lib_LTLIBRARIES = libcfitsio.la
 
@@ -193,7 +193,6 @@ EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
 	docs licenses \
 	README.md README.MacOS README.win \
 	cfitsio.pc.cmake cfitsio.pc.in \
-	cfitsio-config.cmake.in cfitsio-config-version.cmake.in \
 	cfitsio.xcodeproj \
 	CMakeLists.txt \
 	eval.l eval.y \
@@ -212,3 +211,6 @@ CLEANFILES = testprog.fit testf77.fit atestfil.fit btestfil.fit y.output
 
 cfitsioLibObjs:
 	@echo ${libcfitsio_la_SOURCES:.c=.o} ${libcfitsio_swapproc_la_SOURCES:.c=.o}
+
+# Empty rule to prevent GNU Make's builtin from overwriting sample test output
+%.out: %
