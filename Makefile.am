@@ -17,6 +17,9 @@ soname_version_lnx = ${soname_version}.0.0
 include_HEADERS = fitsio.h fitsio2.h longnam.h drvrsmem.h \
 	cfortran.h f77_wrap.h region.h
 
+noinst_HEADERS = drvrgsiftp.h eval_defs.h eval_tab.h group.h grparser.h simplerng.h \
+	utilities/fpack.h utilities/fverify.h
+
 F77_WRAPPERS = f77_wrap1.c f77_wrap2.c f77_wrap3.c f77_wrap4.c
 
 GSIFTP_SRC = drvrgsiftp.c
@@ -197,15 +200,22 @@ EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
 	CMakeLists.txt \
 	eval.l eval.y \
 	iter_a.f iter_a.fit iter_b.f iter_b.fit iter_c.f iter_c.fit \
+	run-testprog \
 	sample.tpl \
 	testf77.out testf77.std \
-	testprog.out testprog.std testprog.tpt
+	testprog.out testprog.std testprog.tpt \
+	utilities/fitsverify.c
 # windumpexts.c
 # winDumpExts.mak
 
+# check: =================================================================
+
+TESTS = run-testprog
+AM_TESTS_ENVIRONMENT = srcdir='$(srcdir)'
+
 # clean: =================================================================
 
-CLEANFILES = testprog.fit testf77.fit atestfil.fit btestfil.fit y.output
+CLEANFILES = testprog.fit testprog.lis testf77.fit atestfil.fit btestfil.fit y.output
 
 # HEASoft packages fitsTcl and POW need a list of all .o files: ==========
 
