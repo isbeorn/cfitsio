@@ -7657,6 +7657,7 @@ static void Do_Deref( ParseData *lParse, Node *this )
 	 } else {
 	    yyerror(0, lParse, "Index out of range");
 	    free( this->value.data.ptr );
+            this->value.data.ptr = 0;
 	 }
 	 
       } else if( allConst && nDims==1 ) {
@@ -7667,6 +7668,7 @@ static void Do_Deref( ParseData *lParse, Node *this )
 	     dimVals[0] > theVar->value.naxes[ theVar->value.naxis-1 ] ) {
 	    yyerror(0, lParse, "Index out of range");
 	    free( this->value.data.ptr );
+            this->value.data.ptr = 0;
 	 } else if ( this->type == BITSTR || this->type == STRING ) {
 	    elem = this->value.nelem * (dimVals[0]-1);
 	    for( row=0; row<lParse->nRows; row++ ) {
@@ -7705,6 +7707,7 @@ static void Do_Deref( ParseData *lParse, Node *this )
 		  if( theDims[i]->value.undef[row] ) {
 		     yyerror(0, lParse, "Null encountered as vector index");
 		     free( this->value.data.ptr );
+                     this->value.data.ptr = 0;
 		     break;
 		  } else
 		     dimVals[i] = theDims[i]->value.data.lngptr[row];
@@ -7749,6 +7752,7 @@ static void Do_Deref( ParseData *lParse, Node *this )
 	    } else {
 	       yyerror(0, lParse, "Index out of range");
 	       free( this->value.data.ptr );
+               this->value.data.ptr = 0;
 	    }
 	 }
 
@@ -7763,6 +7767,7 @@ static void Do_Deref( ParseData *lParse, Node *this )
 	    if( theDims[0]->value.undef[row] ) {
 	       yyerror(0, lParse, "Null encountered as vector index");
 	       free( this->value.data.ptr );
+               this->value.data.ptr = 0;
 	       break;
 	    } else
 	       dimVals[0] = theDims[0]->value.data.lngptr[row];
@@ -7771,6 +7776,7 @@ static void Do_Deref( ParseData *lParse, Node *this )
 		dimVals[0] > theVar->value.naxes[ theVar->value.naxis-1 ] ) {
 	       yyerror(0, lParse, "Index out of range");
 	       free( this->value.data.ptr );
+               this->value.data.ptr = 0;
 	    } else if ( this->type == BITSTR || this->type == STRING ) {
 	      elem = this->value.nelem * (dimVals[0]-1);
 	      elem += row*(theVar->value.nelem+1);
