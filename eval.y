@@ -86,6 +86,7 @@
 #include <time.h>
 
 #include <stdlib.h>
+#include <limits.h>
 
 #ifndef alloca
 #define alloca malloc
@@ -3289,15 +3290,23 @@ static void Do_BinOp_lng( ParseData *lParse, Node *this )
 	    case '^':  this->value.data.lngptr[elem] = (val1  ^ val2);   break;
 
 	    case '%':   
-	       if( val2 ) this->value.data.lngptr[elem] = (val1 % val2);
-	       else {
+               if( val2 ) {
+                 if (val1 == LONG_MIN && val2 == -1)
+                    this->value.data.lngptr[elem] = 0;
+                 else
+                    this->value.data.lngptr[elem] = (val1 % val2);
+	       } else {
 		 this->value.data.lngptr[elem] = 0;
 		 this->value.undef[elem] = 1;
 	       }
 	       break;
 	    case '/': 
-	       if( val2 ) this->value.data.lngptr[elem] = (val1 / val2); 
-	       else {
+               if( val2 ) {
+                 if (val1 == LONG_MIN && val2 == -1)
+                    this->value.data.lngptr[elem] = LONG_MAX;
+                 else
+                    this->value.data.lngptr[elem] = (val1 / val2);
+	       } else {
 		 this->value.data.lngptr[elem] = 0;
 		 this->value.undef[elem] = 1;
 	       }
