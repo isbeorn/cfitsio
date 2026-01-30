@@ -94,6 +94,9 @@
 
 /* Random number generators for various distributions */
 #include "simplerng.h"
+#include <stdint.h>
+
+#define PARSER_VECTOR_MIN_ADDR ((uintptr_t)0x1000)
 
    /*  Shrink the initial stack depth to keep local data <32K (mac limit)  */
    /*  yacc will allocate more space if needed, though.                    */
@@ -201,6 +204,7 @@ static void  bitor (char *result, char *bitstrm1, char *bitstrm2);
 static void  bitnot(char *result, char *bits);
 static int cstrmid(ParseData *lParse, char *dest_str, int dest_len,
 		   char *src_str,  int src_len, int pos);
+static int validate_double_vector(ParseData *lParse, Node *node);
 
 static void yyerror(yyscan_t scanner, ParseData *lParse, char *s);
 
@@ -3328,6 +3332,23 @@ static void Do_BinOp_lng( ParseData *lParse, Node *this )
    }
 }
 
+static int validate_double_vector(ParseData *lParse, Node *node)
+{
+   uintptr_t data = (uintptr_t)node->value.data.dblptr;
+   uintptr_t undef = (uintptr_t)node->value.undef;
+
+   if( data == 0 || data < PARSER_VECTOR_MIN_ADDR ||
+       undef == 0 || undef < PARSER_VECTOR_MIN_ADDR )
+   {
+      yyerror(0, lParse, "parser column data unavailable");
+      if( !lParse->status )
+         lParse->status = PARSE_SYNTAX_ERR;
+      return 0;
+   }
+
+   return 1;
+}
+
 static void Do_BinOp_dbl( ParseData *lParse, Node *this )
 {
    Node   *that1, *that2;
@@ -3352,6 +3373,12 @@ static void Do_BinOp_dbl( ParseData *lParse, Node *this )
    else {
       val2  = that2->value.data.dbl;
    } 
+
+   if( vector1 && !validate_double_vector(lParse, that1) )
+      return;
+
+   if( vector2 && !validate_double_vector(lParse, that2) )
+      return;
 
    if( !vector1 && !vector2 ) {  /*  Result is a constant  */
 
