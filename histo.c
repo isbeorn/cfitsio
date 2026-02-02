@@ -1950,6 +1950,7 @@ int fits_calc_binningde(
 		   "Parser error of binning expression: %s", 
 		   colexpr[ii]);
 	  ffpmsg(errmsg);
+          ffcprs(&lParse);
 	  return *status;
 	}
 	if (nelem < 0) nelem = 1; /* If it's a constant expression */

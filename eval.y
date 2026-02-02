@@ -86,6 +86,7 @@
 #include <time.h>
 
 #include <stdlib.h>
+#include <limits.h>
 
 #ifndef alloca
 #define alloca malloc
@@ -93,6 +94,9 @@
 
 /* Random number generators for various distributions */
 #include "simplerng.h"
+#include <stdint.h>
+
+#define PARSER_VECTOR_MIN_ADDR ((uintptr_t)0x1000)
 
    /*  Shrink the initial stack depth to keep local data <32K (mac limit)  */
    /*  yacc will allocate more space if needed, though.                    */
@@ -200,6 +204,7 @@ static void  bitor (char *result, char *bitstrm1, char *bitstrm2);
 static void  bitnot(char *result, char *bits);
 static int cstrmid(ParseData *lParse, char *dest_str, int dest_len,
 		   char *src_str,  int src_len, int pos);
+static int validate_double_vector(ParseData *lParse, Node *node);
 
 static void yyerror(yyscan_t scanner, ParseData *lParse, char *s);
 
@@ -3289,15 +3294,23 @@ static void Do_BinOp_lng( ParseData *lParse, Node *this )
 	    case '^':  this->value.data.lngptr[elem] = (val1  ^ val2);   break;
 
 	    case '%':   
-	       if( val2 ) this->value.data.lngptr[elem] = (val1 % val2);
-	       else {
+               if( val2 ) {
+                 if (val1 == LONG_MIN && val2 == -1)
+                    this->value.data.lngptr[elem] = 0;
+                 else
+                    this->value.data.lngptr[elem] = (val1 % val2);
+	       } else {
 		 this->value.data.lngptr[elem] = 0;
 		 this->value.undef[elem] = 1;
 	       }
 	       break;
 	    case '/': 
-	       if( val2 ) this->value.data.lngptr[elem] = (val1 / val2); 
-	       else {
+               if( val2 ) {
+                 if (val1 == LONG_MIN && val2 == -1)
+                    this->value.data.lngptr[elem] = LONG_MAX;
+                 else
+                    this->value.data.lngptr[elem] = (val1 / val2);
+	       } else {
 		 this->value.data.lngptr[elem] = 0;
 		 this->value.undef[elem] = 1;
 	       }
@@ -3317,6 +3330,23 @@ static void Do_BinOp_lng( ParseData *lParse, Node *this )
    if( that2->operation>0 ) {
       free( that2->value.data.ptr );
    }
+}
+
+static int validate_double_vector(ParseData *lParse, Node *node)
+{
+   uintptr_t data = (uintptr_t)node->value.data.dblptr;
+   uintptr_t undef = (uintptr_t)node->value.undef;
+
+   if( data == 0 || data < PARSER_VECTOR_MIN_ADDR ||
+       undef == 0 || undef < PARSER_VECTOR_MIN_ADDR )
+   {
+      yyerror(0, lParse, "parser column data unavailable");
+      if( !lParse->status )
+         lParse->status = PARSE_SYNTAX_ERR;
+      return 0;
+   }
+
+   return 1;
 }
 
 static void Do_BinOp_dbl( ParseData *lParse, Node *this )
@@ -3343,6 +3373,12 @@ static void Do_BinOp_dbl( ParseData *lParse, Node *this )
    else {
       val2  = that2->value.data.dbl;
    } 
+
+   if( vector1 && !validate_double_vector(lParse, that1) )
+      return;
+
+   if( vector2 && !validate_double_vector(lParse, that2) )
+      return;
 
    if( !vector1 && !vector2 ) {  /*  Result is a constant  */
 
@@ -5419,6 +5455,7 @@ static void Do_Deref( ParseData *lParse, Node *this )
 	 } else {
 	    yyerror(0, lParse, "Index out of range");
 	    free( this->value.data.ptr );
+            this->value.data.ptr = 0;
 	 }
 	 
       } else if( allConst && nDims==1 ) {
@@ -5429,6 +5466,7 @@ static void Do_Deref( ParseData *lParse, Node *this )
 	     dimVals[0] > theVar->value.naxes[ theVar->value.naxis-1 ] ) {
 	    yyerror(0, lParse, "Index out of range");
 	    free( this->value.data.ptr );
+            this->value.data.ptr = 0;
 	 } else if ( this->type == BITSTR || this->type == STRING ) {
 	    elem = this->value.nelem * (dimVals[0]-1);
 	    for( row=0; row<lParse->nRows; row++ ) {
@@ -5467,6 +5505,7 @@ static void Do_Deref( ParseData *lParse, Node *this )
 		  if( theDims[i]->value.undef[row] ) {
 		     yyerror(0, lParse, "Null encountered as vector index");
 		     free( this->value.data.ptr );
+                     this->value.data.ptr = 0;
 		     break;
 		  } else
 		     dimVals[i] = theDims[i]->value.data.lngptr[row];
@@ -5511,6 +5550,7 @@ static void Do_Deref( ParseData *lParse, Node *this )
 	    } else {
 	       yyerror(0, lParse, "Index out of range");
 	       free( this->value.data.ptr );
+               this->value.data.ptr = 0;
 	    }
 	 }
 
@@ -5525,6 +5565,7 @@ static void Do_Deref( ParseData *lParse, Node *this )
 	    if( theDims[0]->value.undef[row] ) {
 	       yyerror(0, lParse, "Null encountered as vector index");
 	       free( this->value.data.ptr );
+               this->value.data.ptr = 0;
 	       break;
 	    } else
 	       dimVals[0] = theDims[0]->value.data.lngptr[row];
@@ -5533,6 +5574,7 @@ static void Do_Deref( ParseData *lParse, Node *this )
 		dimVals[0] > theVar->value.naxes[ theVar->value.naxis-1 ] ) {
 	       yyerror(0, lParse, "Index out of range");
 	       free( this->value.data.ptr );
+               this->value.data.ptr = 0;
 	    } else if ( this->type == BITSTR || this->type == STRING ) {
 	      elem = this->value.nelem * (dimVals[0]-1);
 	      elem += row*(theVar->value.nelem+1);
