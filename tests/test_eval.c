@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 #include "fitsio.h"
 #include "test_macros.h"
 
@@ -2225,6 +2226,168 @@ test_ffcalc_multidim_column(void)
 	call_01(ffclos, f);
 }
 
+/*
+ * Test integer division overflow to exercise the LONG_MIN / -1 guard
+ * in Do_BinOp_lng.  On platforms where sizeof(long)==4, INT_MIN ==
+ * LONG_MIN and dividing by -1 would overflow; the fix clamps the
+ * result to LONG_MAX.  On 64-bit platforms, INT_MIN / -1 fits in
+ * a long without overflow, but the division path is still exercised.
+ */
+static void
+test_ffcrow_long_div_overflow(void)
+{
+	fitsfile *f;
+	int status = 0;
+	char *ttype[] = { "MINCOL", "NEGCOL" };
+	char *tform[] = { "1J", "1J" };
+	long minval = INT_MIN;
+	long negone = -1;
+	long div_result[1];
+	long mod_result[1];
+	int anynul;
+
+	call_02(ffinit, &f, "!" test_path);
+	call_04(ffphps, f, BYTE_IMG, 0, NULL);
+	call_08(ffcrtb, f, BINARY_TBL, 1, 2, ttype, tform, NULL, NULL);
+	call_06(ffpclj, f, 1, 1, 1, 1, &minval);
+	call_06(ffpclj, f, 2, 1, 1, 1, &negone);
+
+	/* Division: INT_MIN / -1. */
+	call_08(ffcrow, f, TLONG, "MINCOL / NEGCOL",
+		1, 1, NULL, div_result, &anynul);
+	if (sizeof div_result[0] == 4) {
+		fail_if(div_result[0] != LONG_MAX);
+	} else {
+		fail_if(div_result[0] != (long)-(long long)INT_MIN);
+	}
+
+	/* Modulo: INT_MIN % -1. */
+	call_08(ffcrow, f, TLONG, "MINCOL % NEGCOL",
+		1, 1, NULL, mod_result, &anynul);
+	fail_if(mod_result[0] != 0);
+
+	call_01(ffclos, f);
+}
+
+/*
+ * Test integer division by zero to exercise the undef path
+ * in Do_BinOp_lng when the divisor column contains zero.
+ */
+static void
+test_ffcrow_long_div_by_zero(void)
+{
+	fitsfile *f;
+	int status = 0;
+	char *ttype[] = { "NUMCOL", "DENCOL" };
+	char *tform[] = { "1J", "1J" };
+	long num = 42;
+	long den = 0;
+	long div_result[1];
+	long mod_result[1];
+	int anynul;
+
+	call_02(ffinit, &f, "!" test_path);
+	call_04(ffphps, f, BYTE_IMG, 0, NULL);
+	call_08(ffcrtb, f, BINARY_TBL, 1, 2, ttype, tform, NULL, NULL);
+	call_06(ffpclj, f, 1, 1, 1, 1, &num);
+	call_06(ffpclj, f, 2, 1, 1, 1, &den);
+
+	/* Division by zero marks result as undefined. */
+	anynul = 0;
+	call_08(ffcrow, f, TLONG, "NUMCOL / DENCOL",
+		1, 1, NULL, div_result, &anynul);
+	fail_if(anynul != 1);
+
+	/* Modulo by zero marks result as undefined. */
+	anynul = 0;
+	call_08(ffcrow, f, TLONG, "NUMCOL % DENCOL",
+		1, 1, NULL, mod_result, &anynul);
+	fail_if(anynul != 1);
+
+	call_01(ffclos, f);
+}
+
+/*
+ * Test vector column deref with out-of-range index to exercise
+ * the error path in Do_Deref where the double-free fix was applied.
+ */
+static void
+test_ffcrow_vector_index_out_of_range(void)
+{
+	fitsfile *f;
+	int status = 0;
+	char *ttype[] = { "VECCOL" };
+	char *tform[] = { "5J" };
+	long vecdata[5] = { 10, 20, 30, 40, 50 };
+
+	call_02(ffinit, &f, "!" test_path);
+	call_04(ffphps, f, BYTE_IMG, 0, NULL);
+	call_08(ffcrtb, f, BINARY_TBL, 1, 1, ttype, tform, NULL, NULL);
+	call_06(ffpclj, f, 1, 1, 1, 5, vecdata);
+
+	/* Index 99 exceeds vector length of 5. */
+	fits_calculator(f, "VECCOL[99]", f, "BADCOL", NULL, &status);
+	fail_if(status == 0);
+
+	status = 0;
+	call_01(ffclos, f);
+}
+
+/*
+ * Test vector column deref with index zero to exercise the
+ * out-of-range path (FITS indices are 1-based).
+ */
+static void
+test_ffcrow_vector_index_zero(void)
+{
+	fitsfile *f;
+	int status = 0;
+	char *ttype[] = { "VECCOL" };
+	char *tform[] = { "5J" };
+	long vecdata[5] = { 10, 20, 30, 40, 50 };
+
+	call_02(ffinit, &f, "!" test_path);
+	call_04(ffphps, f, BYTE_IMG, 0, NULL);
+	call_08(ffcrtb, f, BINARY_TBL, 1, 1, ttype, tform, NULL, NULL);
+	call_06(ffpclj, f, 1, 1, 1, 5, vecdata);
+
+	/* Index 0 is invalid for 1-based FITS vectors. */
+	fits_calculator(f, "VECCOL[0]", f, "BADCOL", NULL, &status);
+	fail_if(status == 0);
+
+	status = 0;
+	call_01(ffclos, f);
+}
+
+/*
+ * Test double-precision column arithmetic to exercise the
+ * validate_double_vector guard in Do_BinOp_dbl.
+ */
+static void
+test_ffcrow_double_column_arithmetic(void)
+{
+	fitsfile *f;
+	int status = 0;
+	char *ttype[] = { "DCOL1", "DCOL2" };
+	char *tform[] = { "1D", "1D" };
+	double v1 = 1.0e308;
+	double v2 = 2.0;
+	double result[1];
+	int anynul;
+
+	call_02(ffinit, &f, "!" test_path);
+	call_04(ffphps, f, BYTE_IMG, 0, NULL);
+	call_08(ffcrtb, f, BINARY_TBL, 1, 2, ttype, tform, NULL, NULL);
+	call_06(ffpcld, f, 1, 1, 1, 1, &v1);
+	call_06(ffpcld, f, 2, 1, 1, 1, &v2);
+
+	call_08(ffcrow, f, TDOUBLE, "DCOL1 / DCOL2",
+		1, 1, NULL, result, &anynul);
+	fail_if(result[0] < 4.9e307 || result[0] > 5.1e307);
+
+	call_01(ffclos, f);
+}
+
 int
 main(void)
 {
@@ -2367,6 +2530,17 @@ main(void)
 
 	/* Multi-dimensional column tests */
 	test_ffcalc_multidim_column();
+
+	/* Integer overflow and division-by-zero tests */
+	test_ffcrow_long_div_overflow();
+	test_ffcrow_long_div_by_zero();
+
+	/* Vector index out-of-range tests */
+	test_ffcrow_vector_index_out_of_range();
+	test_ffcrow_vector_index_zero();
+
+	/* Double-precision column arithmetic */
+	test_ffcrow_double_column_arithmetic();
 
 	remove(test_path);
 
