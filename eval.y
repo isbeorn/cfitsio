@@ -168,6 +168,7 @@ static int  Test_Dims ( ParseData *, int Node1, int Node2 );
 static void Copy_Dims ( ParseData *, int Node1, int Node2 );
 
 static void Allocate_Ptrs( ParseData *, Node *this );
+static void free_node_buffer(Node *node);
 static void Do_Unary     ( ParseData *, Node *this );
 static void Do_Offset    ( ParseData *, Node *this );
 static void Do_BinOp_bit ( ParseData *, Node *this );
@@ -2406,6 +2407,27 @@ static void Allocate_Ptrs( ParseData *lParse, Node *this )
    }
 }
 
+static void free_node_buffer(Node *node)
+{
+   if( node->type==BITSTR || node->type==STRING )
+   {
+      if( node->value.data.strptr )
+      {
+         if( node->value.data.strptr[0] )
+            free( node->value.data.strptr[0] );
+         free( node->value.data.strptr );
+         node->value.data.strptr = NULL;
+      }
+   }
+   else if( node->value.data.ptr )
+   {
+      free( node->value.data.ptr );
+      node->value.data.ptr = NULL;
+   }
+
+   node->value.undef = NULL;
+}
+
 static void Do_Unary( ParseData *lParse, Node *this )
 {
    Node *that;
@@ -2556,6 +2578,16 @@ static void Do_Offset( ParseData *lParse, Node *this )
 
    nelem = nRealElem;
 
+   if ((fRow >=0 && (LONG_MAX - lParse->nRows < fRow)) ||
+       (fRow < 0 && (LONG_MIN + lParse->firstDataRow+1 > fRow)))       
+   {
+      yyerror(0, lParse, "numerical underflow or overflow for row offset value");
+      if (!lParse->status)
+         lParse->status = PARSE_SYNTAX_ERR;
+      free_node_buffer(this);
+      return;
+   }
+
    if( fRow < lParse->firstDataRow ) {
 
       /* Must fill in data at start of array */
@@ -2586,7 +2618,7 @@ static void Do_Offset( ParseData *lParse, Node *this )
    } else if( fRow + lParse->nRows > lParse->firstDataRow + lParse->nDataRows ) {
 
       /* Must fill in data at end of array */
-
+      
       nRowReload = (fRow+lParse->nRows) - (lParse->firstDataRow+lParse->nDataRows);
       if( nRowReload>lParse->nRows ) {
 	 nRowReload = lParse->nRows;
@@ -2657,6 +2689,29 @@ static void Do_Offset( ParseData *lParse, Node *this )
    else
       elem = lParse->nRows * nelem;
 
+   if (rowOffset > 0)
+   {
+      if (rowOffset > LONG_MAX/nelem)
+      {
+         yyerror(0, lParse, "numerical overflow for row offset * nelem value");
+         if (!lParse->status)
+            lParse->status = PARSE_SYNTAX_ERR;
+         free_node_buffer(this);
+         return;
+      }
+   }
+   else if (rowOffset < 0)
+   {
+      if (rowOffset < LONG_MIN/nelem)
+      {
+         yyerror(0, lParse, "numerical underflow for row offset * nelem value");
+         if (!lParse->status)
+            lParse->status = PARSE_SYNTAX_ERR;
+         free_node_buffer(this);
+         return;
+      }
+   }
+   
    offset = nelem * rowOffset;
    while( nRowOverlap-- && !lParse->status ) {
       while( nelem-- && !lParse->status ) {
