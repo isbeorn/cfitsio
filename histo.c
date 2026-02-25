@@ -802,7 +802,7 @@ int ffhist2e(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
       */
       int naxis1;
       long int nelem, naxes[MAXDIMS];
-      ParseData lParse;
+      ParseData lParse = {0};
 
       ffiprs( *fptr, 0, wtexpr, MAXDIMS, &wtdatatype, &nelem, &naxis1,
 	      naxes, &lParse, status );
@@ -1940,7 +1940,7 @@ int fits_calc_binningde(
 
 	long nelem, naxes[MAXDIMS];
 	int naxis;
-	ParseData lParse;
+	ParseData lParse = {0};
 
 	/* Initialize the parser so that we can determine the datatype
 	   of the returned type as well as the vector dimensions */
@@ -2977,7 +2977,7 @@ int fits_get_expr_minmax(fitsfile *fptr, char *expr, double *datamin,
 */
 {
    parseInfo Info;
-   ParseData lParse;
+   ParseData lParse = {0};
    struct histo_minmax_workfn_struct minmaxWorkFn;
    int naxis;
    long nelem, naxes[MAXDIMS], nrows;
