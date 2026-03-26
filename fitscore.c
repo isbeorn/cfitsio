@@ -9212,7 +9212,7 @@ int ffc2j(const char *cval,     /* I - string representation of the value */
   datatype conversion if necessary.
 */
 {
-    char dtype, sval[81], msg[81];
+    char dtype, sval[81], msg[FLEN_ERRMSG];
     int lval;
     double dval;
     
@@ -9256,7 +9256,7 @@ int ffc2j(const char *cval,     /* I - string representation of the value */
     {
             *ival = 0;
             strcpy(msg,"Error in ffc2j evaluating string as a long integer: ");
-            strncat(msg,cval,30);
+            strncat(msg,cval,FLEN_ERRMSG-strlen(msg)-1);
             ffpmsg(msg);
             return(*status);
     }
@@ -9273,7 +9273,7 @@ int ffc2uj(const char *cval,     /* I - string representation of the value */
   datatype conversion if necessary.
 */
 {
-    char dtype, sval[81], msg[81];
+    char dtype, sval[81], msg[FLEN_ERRMSG];
     int lval;
     double dval;
     
@@ -9317,7 +9317,7 @@ int ffc2uj(const char *cval,     /* I - string representation of the value */
     {
             *ival = 0;
             strcpy(msg,"Error in ffc2j evaluating string as a long integer: ");
-            strncat(msg,cval,30);
+            strncat(msg,cval,FLEN_ERRMSG-strlen(msg)-1);
             ffpmsg(msg);
             return(*status);
     }
@@ -9594,7 +9594,7 @@ int ffc2ujj(const char *cval,  /* I - string representation of the value */
     if (errno == ERANGE)
     {
         strcpy(msg,"Range Error in ffc2ujj converting string to unsigned longlong int: ");
-        strncat(msg,cval,25);
+        strncat(msg,cval,23);
         ffpmsg(msg);
 
         *status = NUM_OVERFLOW;

@@ -4,6 +4,7 @@
 # include <math.h>
 # include <ctype.h>
 # include <time.h>
+# include <limits.h>
 # include "fitsio2.h"
 
 #define NULL_VALUE -2147483647 /* value used to represent undefined pixels */
@@ -5411,6 +5412,11 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
         }
         expect_nrows *= (((infptr->Fptr)->znaxis[ii] - 1) / 
                   (infptr->Fptr)->tilesize[ii]+ 1);
+        if (maxtilelen > LONG_MAX/((infptr->Fptr)->tilesize[ii]))
+        {
+           ffpmsg("numerical overflow in imcomp_get_compressed_image_par");
+           return(*status = DATA_DECOMPRESSION_ERR);  
+        }
         maxtilelen *= (infptr->Fptr)->tilesize[ii];
     }
 
@@ -6346,11 +6352,11 @@ int imcomp_decompress_tile (fitsfile *infptr,
         smooth = (infptr->Fptr)->hcomp_smooth;
 
         if ( ((infptr->Fptr)->zbitpix == BYTE_IMG || (infptr->Fptr)->zbitpix == SHORT_IMG)) {
-            *status = fits_hdecompress(cbuf, smooth, idata, &nx, &ny,
+            *status = fits_hdecompress(cbuf, smooth, idata, tilelen, &nx, &ny,
 	        &scale, status);
         } else {  /* zbitpix = LONG_IMG (32) */
             /* idata must have been allocated twice as large for this to work */
-            *status = fits_hdecompress64(cbuf, smooth, (LONGLONG *) idata, &nx, &ny,
+            *status = fits_hdecompress64(cbuf, smooth, (LONGLONG *) idata, tilelen, &nx, &ny,
 	        &scale, status);
         }       
 
