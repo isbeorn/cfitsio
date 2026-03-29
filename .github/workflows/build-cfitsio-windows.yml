@@ -1,0 +1,104 @@
+name: build-cfitsio-windows
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Create vcpkg manifest + configuration (baseline = vcpkg submodule HEAD)
+      - name: Generate vcpkg manifest & config
+        shell: pwsh
+        run: |
+          $baseline = (git -C vcpkg rev-parse HEAD).Trim()
+
+          $manifestObj = [ordered]@{
+            name = "cfitsio-build"
+            "version-string" = "1.0.0"
+            dependencies = @("zlib","pthreads")
+            "builtin-baseline" = $baseline
+          }
+          $manifestJson = $manifestObj | ConvertTo-Json -Depth 3
+          Set-Content -Path vcpkg.json -Value $manifestJson -Encoding utf8
+
+          $configObj = [ordered]@{
+            "default-registry" = @{
+              kind = "builtin"
+              baseline = $baseline
+            }
+          }
+          $configJson = $configObj | ConvertTo-Json -Depth 3
+          Set-Content -Path vcpkg-configuration.json -Value $configJson -Encoding utf8
+
+
+      - name: Run vcpkg (manifest mode)
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgJsonGlob: 'vcpkg.json'
+
+      - name: Setup MSVC dev command prompt
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Put vcpkg installed dir outside repo/build (avoids export-path issues)
+        shell: pwsh
+        run: echo "VCPKG_INSTALLED_DIR=$env:RUNNER_TEMP\vcpkg_installed" >> $env:GITHUB_ENV
+
+      - name: Configure (CMake -> VS 2022)
+        shell: pwsh
+        run: >
+          cmake -S . -B build\cfitsio
+          -G "Visual Studio 17 2022" -A x64
+          -DBUILD_SHARED_LIBS=ON
+          -DUSE_SSE2=ON
+          -DUSE_SSSE3=ON
+          -DUSE_CURL=OFF
+          -DUSE_PTHREADS=ON
+          -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_ROOT}\scripts\buildsystems\vcpkg.cmake"
+          -DVCPKG_TARGET_TRIPLET=x64-windows
+          -DVCPKG_INSTALLED_DIR="${env:VCPKG_INSTALLED_DIR}"
+          -DCMAKE_THREAD_PREFER_PTHREAD=ON
+          -DTHREADS_PREFER_PTHREAD_FLAG=ON
+          -DPThreads4W_DIR="${env:VCPKG_INSTALLED_DIR}\x64-windows\share\PThreads4W"
+
+      - name: Build
+        run: cmake --build build\cfitsio --config Release -j 2
+
+      - name: Collect artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+
+          # Find DLL/IMPLIB/PDB anywhere under the CMake build dir
+          $bins = Get-ChildItem -Path build\cfitsio -Recurse -Include *.dll,*.lib,*.pdb -ErrorAction SilentlyContinue
+          if ($bins) {
+            $bins | Copy-Item -Destination artifacts -Force
+          } else {
+            Write-Host "No binaries found under build\cfitsio. Listing tree for debugging:"
+            Get-ChildItem -Path build\cfitsio -Recurse | Select-Object FullName
+            exit 1
+          }
+
+          # Headers
+          New-Item -ItemType Directory -Force -Path artifacts\include | Out-Null
+          Get-ChildItem -Path . -File -Include fitsio.h,fitsio2.h,longnam.h | Copy-Item -Destination artifacts\include -Force
+
+          # Also include the generated export header from the build dir if present
+          $exp = Join-Path build\cfitsio 'cfitsio_export.h'
+          if (Test-Path $exp) { Copy-Item $exp artifacts\include\ -Force }
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cfitsio-windows-x64
+          path: artifacts
+          if-no-files-found: error
