@@ -5260,7 +5260,7 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
     char keyword[FLEN_KEYWORD];
     char value[FLEN_VALUE];
     int ii, tstatus, tstatus2, doffset, oldFormat=0, colNum=0;
-    long expect_nrows, maxtilelen;
+    long expect_nrows, maxtilelen, rowFactor;
 
     if (*status > 0)
         return(*status);
@@ -5410,8 +5410,20 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
            ffpmsg("invalid ZTILE value = 0 in compressed image");
            return (*status = DATA_DECOMPRESSION_ERR);
         }
-        expect_nrows *= (((infptr->Fptr)->znaxis[ii] - 1) / 
-                  (infptr->Fptr)->tilesize[ii]+ 1);
+        
+        if ((infptr->Fptr)->znaxis[ii] == LONG_MIN) /* cannot subtract 1 from this */
+        {
+           ffpmsg("numerical overflow in imcomp_get_compressed_image_par");
+           return(*status = DATA_DECOMPRESSION_ERR);  
+        }
+        rowFactor = ((infptr->Fptr)->znaxis[ii] - 1) / 
+                  (infptr->Fptr)->tilesize[ii]+ 1;
+        if (expect_nrows > LONG_MAX/rowFactor)
+        {
+           ffpmsg("numerical overflow in imcomp_get_compressed_image_par");
+           return(*status = DATA_DECOMPRESSION_ERR);          
+        }
+        expect_nrows *= rowFactor;
         if (maxtilelen > LONG_MAX/((infptr->Fptr)->tilesize[ii]))
         {
            ffpmsg("numerical overflow in imcomp_get_compressed_image_par");
