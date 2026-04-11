@@ -41,6 +41,7 @@ test_hcompress_lossless_roundtrip(void)
 	/* Decompress */
 	status = 0;
 	fits_hdecompress((unsigned char *)compressed, 0, decompressed,
+		sizeof decompressed / sizeof *decompressed,
 		&out_ny, &out_nx, &out_scale, &status);
 	fail_if(status != 0);
 	fail_if(out_nx != nx);
@@ -85,6 +86,7 @@ test_hcompress_lossy(void)
 	/* Decompress */
 	status = 0;
 	fits_hdecompress((unsigned char *)compressed, 0, decompressed,
+		sizeof decompressed / sizeof *decompressed,
 		&out_ny, &out_nx, &out_scale, &status);
 	fail_if(status != 0);
 
@@ -142,6 +144,7 @@ test_hcompress_smooth(void)
 	/* Decompress with smoothing enabled */
 	status = 0;
 	fits_hdecompress((unsigned char *)compressed, 1, decompressed,
+		sizeof decompressed / sizeof *decompressed,
 		&out_ny, &out_nx, &out_scale, &status);
 	fail_if(status != 0);
 	fail_if(out_nx != nx);
@@ -180,6 +183,7 @@ test_hcompress_uniform(void)
 	/* Decompress and verify */
 	status = 0;
 	fits_hdecompress((unsigned char *)compressed, 0, decompressed,
+		sizeof decompressed / sizeof *decompressed,
 		&out_ny, &out_nx, &out_scale, &status);
 	fail_if(status != 0);
 
@@ -229,6 +233,7 @@ test_hcompress_large(void)
 	/* Decompress */
 	status = 0;
 	fits_hdecompress((unsigned char *)compressed, 0, decompressed,
+		nx * ny,
 		&out_ny, &out_nx, &out_scale, &status);
 	fail_if(status != 0);
 
@@ -284,7 +289,7 @@ test_hcompress_odd_dimensions(void)
 
 	/* Decompress */
 	status = 0;
-	fits_hdecompress((unsigned char *)compressed, 0, decompressed,
+	fits_hdecompress((unsigned char *)compressed, 0, decompressed, n,
 		&out_ny, &out_nx, &out_scale, &status);
 	fail_if(status != 0);
 	fail_if(out_nx != nx);
@@ -336,7 +341,7 @@ test_hcompress_odd_x(void)
 	fail_if(status != 0);
 
 	status = 0;
-	fits_hdecompress((unsigned char *)compressed, 0, decompressed,
+	fits_hdecompress((unsigned char *)compressed, 0, decompressed, n,
 		&out_ny, &out_nx, &out_scale, &status);
 	fail_if(status != 0);
 	fail_if(out_nx != nx);
@@ -387,7 +392,7 @@ test_hcompress_odd_y(void)
 	fail_if(status != 0);
 
 	status = 0;
-	fits_hdecompress((unsigned char *)compressed, 0, decompressed,
+	fits_hdecompress((unsigned char *)compressed, 0, decompressed, n,
 		&out_ny, &out_nx, &out_scale, &status);
 	fail_if(status != 0);
 	fail_if(out_nx != nx);
@@ -438,7 +443,7 @@ test_hcompress_non_power2(void)
 	fail_if(status != 0);
 
 	status = 0;
-	fits_hdecompress((unsigned char *)compressed, 0, decompressed,
+	fits_hdecompress((unsigned char *)compressed, 0, decompressed, n,
 		&out_ny, &out_nx, &out_scale, &status);
 	fail_if(status != 0);
 
@@ -523,6 +528,7 @@ test_hcompress_minimal(void)
 
 	status = 0;
 	fits_hdecompress((unsigned char *)compressed, 0, decompressed,
+		sizeof decompressed / sizeof *decompressed,
 		&out_ny, &out_nx, &out_scale, &status);
 	fail_if(status != 0);
 
@@ -566,7 +572,7 @@ test_hcompress_prime_dims(void)
 	fail_if(status != 0);
 
 	status = 0;
-	fits_hdecompress((unsigned char *)compressed, 0, decompressed,
+	fits_hdecompress((unsigned char *)compressed, 0, decompressed, n,
 		&out_ny, &out_nx, &out_scale, &status);
 	fail_if(status != 0);
 	fail_if(out_nx != nx);
@@ -614,7 +620,7 @@ test_hcompress_odd_lossy_smooth(void)
 	fail_if(status != 0);
 
 	status = 0;
-	fits_hdecompress((unsigned char *)compressed, 1, decompressed,
+	fits_hdecompress((unsigned char *)compressed, 1, decompressed, n,
 		&out_ny, &out_nx, &out_scale, &status);
 	fail_if(status != 0);
 
@@ -655,7 +661,7 @@ test_hcompress64_odd(void)
 	fail_if(status != 0);
 
 	status = 0;
-	fits_hdecompress64((unsigned char *)compressed, 0, decompressed,
+	fits_hdecompress64((unsigned char *)compressed, 0, decompressed, n,
 		&out_ny, &out_nx, &out_scale, &status);
 	fail_if(status != 0);
 	fail_if(out_nx != nx);
@@ -704,7 +710,7 @@ test_hcompress64_smooth(void)
 
 	/* Decompress with smoothing to hit hsmooth64 path */
 	status = 0;
-	fits_hdecompress64((unsigned char *)compressed, 1, decompressed,
+	fits_hdecompress64((unsigned char *)compressed, 1, decompressed, n,
 		&out_ny, &out_nx, &out_scale, &status);
 	fail_if(status != 0);
 	fail_if(out_nx != nx);
@@ -749,7 +755,7 @@ test_hcompress64_large_smooth(void)
 
 	/* Smooth decompression */
 	status = 0;
-	fits_hdecompress64((unsigned char *)compressed, 1, decompressed,
+	fits_hdecompress64((unsigned char *)compressed, 1, decompressed, n,
 		&out_ny, &out_nx, &out_scale, &status);
 	fail_if(status != 0);
 
@@ -792,7 +798,7 @@ test_hcompress_high_scale(void)
 
 	/* Decompress with smoothing */
 	status = 0;
-	fits_hdecompress((unsigned char *)compressed, 1, decompressed,
+	fits_hdecompress((unsigned char *)compressed, 1, decompressed, n,
 		&out_ny, &out_nx, &out_scale, &status);
 	fail_if(status != 0);
 
