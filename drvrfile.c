@@ -92,7 +92,7 @@ int file_open(char *filename, int rwmode, int *handle)
 {
     FILE *diskfile;
     int copyhandle, ii, status;
-    char recbuf[2880];
+    char recbuf[2880], *tstEnv=0;
     size_t nread;
 
     /*
@@ -109,6 +109,17 @@ int file_open(char *filename, int rwmode, int *handle)
       if (status) {
         file_outfile[0] = '\0';
         return(status);
+      }
+      
+      tstEnv = getenv("CFITSIO_DISABLE_COPY_RESTRICT");
+      if (!tstEnv || tstEnv[0] != '1')
+      {
+         if (!check_is_file_fits(diskfile))
+         {
+           ffpmsg("Input file is not a FITS file.  Cannot create output file.");
+           ffpmsg(file_outfile);
+           return (FILE_NOT_OPENED);
+         }
       }
       
       /* create the output file */
@@ -835,7 +846,7 @@ int file_compress_open(char *filename, int rwmode, int *hdl)
 {
     FILE *indiskfile, *outdiskfile;
     int status;
-    char *cptr;
+    char *cptr, *tstEnv=0;
 
     /* open the compressed disk file */
     status = file_openfile(filename, READONLY, &indiskfile);
@@ -846,6 +857,17 @@ int file_compress_open(char *filename, int rwmode, int *hdl)
         return(status);
     }
 
+    tstEnv = getenv("CFITSIO_DISABLE_COPY_RESTRICT");
+    if (!tstEnv || tstEnv[0] != '1')
+    {
+       if (!check_is_file_fits(indiskfile))
+       {
+         ffpmsg("Input file is not a FITS file.  Cannot create output file.");
+         ffpmsg(file_outfile);
+         return (FILE_NOT_OPENED);
+       }
+    }
+      
     /* name of the output uncompressed file is stored in the */
     /* global variable called 'file_outfile'.                */
 
