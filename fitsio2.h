@@ -1181,6 +1181,11 @@ int fits_register_driver( char *prefix,
 	int (*fitsread) (int driverhandle, void *buffer, long nbytes),
 	int (*fitswrite)(int driverhandle, void *buffer, long nbytes));
 
+/* utilities may be called by multiple drivers */
+
+int check_is_file_fits(FILE* fp);
+int check_is_mem_fits(char *inputmem, size_t len);
+
 /* file driver I/O routines */
 
 int file_init(void);
