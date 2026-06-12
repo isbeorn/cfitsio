@@ -5275,16 +5275,16 @@ int fits_init_cfitsio(void)
             NULL, 
             NULL,
 	    NULL,
-            stream_open,
-            stream_create,
+            fits_stream_open,
+            fits_stream_create,
             NULL,   /* no stream truncate function */
-            stream_close,
+            fits_stream_close,
             NULL,   /* no stream remove */
-            stream_size,
-            stream_flush,
-            stream_seek,
-            stream_read,
-            stream_write);
+            fits_stream_size,
+            fits_stream_flush,
+            fits_stream_seek,
+            fits_stream_read,
+            fits_stream_write);
 
     if (status)
     {

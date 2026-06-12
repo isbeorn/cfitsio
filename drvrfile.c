@@ -1065,7 +1065,7 @@ int file_checkfile (char *urltype, char *infile, char *outfile)
 
 
 /*--------------------------------------------------------------------------*/
-int stream_open(char *filename, int rwmode, int *handle)
+int fits_stream_open(char *filename, int rwmode, int *handle)
 {
     /*
         read from stdin
@@ -1078,7 +1078,7 @@ int stream_open(char *filename, int rwmode, int *handle)
     return(0);
 }
 /*--------------------------------------------------------------------------*/
-int stream_create(char *filename, int *handle)
+int fits_stream_create(char *filename, int *handle)
 {
     /*
         write to stdout
@@ -1092,7 +1092,7 @@ int stream_create(char *filename, int *handle)
     return(0);
 }
 /*--------------------------------------------------------------------------*/
-int stream_size(int handle, LONGLONG *filesize)
+int fits_stream_size(int handle, LONGLONG *filesize)
 /*
   return the size of the file in bytes
 */
@@ -1104,7 +1104,7 @@ int stream_size(int handle, LONGLONG *filesize)
     return(0);
 }
 /*--------------------------------------------------------------------------*/
-int stream_close(int handle)
+int fits_stream_close(int handle)
 /*
      don't have to close stdin or stdout 
 */
@@ -1114,7 +1114,7 @@ int stream_close(int handle)
     return(0);
 }
 /*--------------------------------------------------------------------------*/
-int stream_flush(int handle)
+int fits_stream_flush(int handle)
 /*
   flush the file
 */
@@ -1125,7 +1125,7 @@ int stream_flush(int handle)
     return(0);
 }
 /*--------------------------------------------------------------------------*/
-int stream_seek(int handle, LONGLONG offset)
+int fits_stream_seek(int handle, LONGLONG offset)
    /* 
       seeking is not allowed in a stream
    */
@@ -1134,7 +1134,7 @@ int stream_seek(int handle, LONGLONG offset)
     return(1);
 }
 /*--------------------------------------------------------------------------*/
-int stream_read(int hdl, void *buffer, long nbytes)
+int fits_stream_read(int hdl, void *buffer, long nbytes)
 /*
      reading from stdin stream 
 */
@@ -1156,7 +1156,7 @@ int stream_read(int hdl, void *buffer, long nbytes)
     return(0);
 }
 /*--------------------------------------------------------------------------*/
-int stream_write(int hdl, void *buffer, long nbytes)
+int fits_stream_write(int hdl, void *buffer, long nbytes)
 /*
   write bytes at the current position in the file
 */
