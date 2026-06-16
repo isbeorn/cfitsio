@@ -1729,11 +1729,10 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
 /*--------------------------------------------------------------------------*/
 int check_is_file_fits(FILE* fp)
 {
-   const size_t NBYTES=1000;
-   char buf[NBYTES];
+   char buf[1000];
    size_t nread=0;
    
-   nread = fread(buf,1,NBYTES,fp);
+   nread = fread(buf,1,1000,fp);
    rewind(fp);
    if (!nread)
       return 0;
