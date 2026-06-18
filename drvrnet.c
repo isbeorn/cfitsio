@@ -2724,7 +2724,7 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
   #ifdef _REENTRANT
   char *saveptr;
   #endif
-  char ip[SHORTLEN];
+  char ip[MAXLEN];
   char turl[MAXLEN];
   int port;
   int ii,tryingtologin = 1;
@@ -3008,7 +3008,7 @@ int ftp_file_exist(char *filename)
   #ifdef _REENTRANT
   char *saveptr;
   #endif
-  char ip[SHORTLEN];
+  char ip[MAXLEN];
   char turl[MAXLEN];
   int port;
   int ii, tryingtologin = 1;
