@@ -132,7 +132,7 @@ oct		([oO][01234567xX]+)
 hex		([hH][0123456789aAbBcCdDeEfFxX]+)
 bitconst        (0b[01]+)
 hexconst        (0x[0123456789aAbBcCdDeEfF]+)
-octconst        (0o]+)
+octconst        (0o[01234567]+)
 integer		[0-9]+
 boolean         (t|f|T|F)
 real		([0-9]*"."[0-9]+)|([0-9]*"."*[0-9]+[eEdD][+-]?[0-9]+)|([0-9]*".")
