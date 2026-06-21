@@ -9522,14 +9522,11 @@ int ffc2jj(const char *cval,  /* I - string representation of the value */
 
 #if defined(_MSC_VER)
 
-    /* Microsoft Visual C++ 6.0 does not have the strtoll function */
-    *ival =  _atoi64(cval);
-    loc = (char *) cval;
-    while (*loc == ' ') loc++;     /* skip spaces */
-    if    (*loc == '-') loc++;     /* skip minus sign */
-    if    (*loc == '+') loc++;     /* skip plus sign */
-    while (isdigit(*loc)) loc++;   /* skip digits */
-
+    /* Microsoft Visual C++ does not have the strtoull function, but it
+       provides _strtoui64, the unsigned 64-bit string conversion.  This
+       correctly handles values above LLONG_MAX (unlike _atoi64) and sets
+       errno to ERANGE on overflow. */
+    *ival = _strtoui64(cval, &loc, 10);
 #elif (USE_LL_SUFFIX == 1)
     *ival = strtoll(cval, &loc, 10);  /* read the string as an integer */
 #else
