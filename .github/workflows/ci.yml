@@ -17,9 +17,6 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up Developer Command Prompt
-      uses: ilammy/msvc-dev-cmd@v1
-
     # 1. Manually install zlib using the built-in vcpkg executable
     - name: Install zlib via vcpkg
       run: |
@@ -27,6 +24,7 @@ jobs:
 
     # 2. Configure CMake by passing the toolchain file
     - name: Configure CMake
+      shell: powershell
       run: >
         cmake -B ${{github.workspace}}/build 
         -DUSE_CURL=OFF
