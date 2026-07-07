@@ -1268,17 +1268,27 @@ YY_RULE_SETUP
 {
                   int len;
                   len = strlen(yytext);
+                  len--;
 		  while (yytext[len] == ' ')
 			len--;
-                  len = len - 1;
-		  strncpy(yylval->str,&yytext[1],len);
-		  yylval->str[len] = '\0';
+                  if (len >= MAX_STRLEN) {
+		     char errMsg[100];
+		     yylParse->status = PARSE_SYNTAX_ERR;
+		     strcpy (errMsg,"Bit string exceeds maximum length: '");
+		     strncat(errMsg, yytext, 20);
+		     strcat (errMsg,"...'");
+		     ffpmsg (errMsg);
+                     yylval->str[0] = '\0';
+                  } else {
+		     strncpy(yylval->str,&yytext[1],len);
+		     yylval->str[len] = '\0';
+                  }
 		  return( BITSTR );
 		}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 171 "eval.l"
+#line 181 "eval.l"
 {
                   int len;
                   char tmpstring[256];
@@ -1293,9 +1303,9 @@ YY_RULE_SETUP
 		    ffpmsg (errMsg);
 		    len = 0;
 		  } else {
+		    len = len - 1;
 		    while (yytext[len] == ' ')
 		      len--;
-		    len = len - 1;
 		    strncpy(tmpstring,&yytext[1],len);
 		  }
                   tmpstring[len] = '\0';
@@ -1372,7 +1382,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 261 "eval.l"
+#line 271 "eval.l"
 {
                   int len;
                   char tmpstring[256];
@@ -1387,9 +1397,9 @@ YY_RULE_SETUP
 		    ffpmsg (errMsg);
 		    len = 0;
 		  } else {
+                    len = len - 1;
 		    while (yytext[len] == ' ')
 		      len--;
-		    len = len - 1;
 		    strncpy(tmpstring,&yytext[1],len);
 		  }
                   tmpstring[len] = '\0';
@@ -1505,7 +1515,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 390 "eval.l"
+#line 400 "eval.l"
 {
 		  long int constval = 0;
 		  char *p;
@@ -1518,7 +1528,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 399 "eval.l"
+#line 409 "eval.l"
 {
 		  long int constval = 0;
 		  char *p;
@@ -1531,7 +1541,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 408 "eval.l"
+#line 418 "eval.l"
 {
 		  long int constval = 0;
 		  char *p;
@@ -1545,7 +1555,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 420 "eval.l"
+#line 430 "eval.l"
 {
                   yylval->lng = atol(yytext);
 		  return( LONG );
@@ -1553,7 +1563,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 424 "eval.l"
+#line 434 "eval.l"
 {
                   if ((yytext[0] == 't') || (yytext[0] == 'T'))
 		    yylval->log = 1;
@@ -1564,7 +1574,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 431 "eval.l"
+#line 441 "eval.l"
 {
                   yylval->dbl = atof(yytext);
 		  return( DOUBLE );
@@ -1572,7 +1582,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 435 "eval.l"
+#line 445 "eval.l"
 {
                   if(        !fits_strcasecmp(yytext,"#PI") ) {
 		     yylval->dbl = (double)(4) * atan((double)(1));
@@ -1594,9 +1604,20 @@ YY_RULE_SETUP
 		     int result;
                      if (yytext[1] == '$') {
                         len = strlen(yytext) - 3;
-                        yylval->str[0]     = '#';
-                        strncpy(yylval->str+1,&yytext[2],len);
-                        yylval->str[len+1] = '\0';
+                        if (len >= MAX_STRLEN)
+                        {
+		           char errMsg[100];
+		           yylParse->status = PARSE_SYNTAX_ERR;
+		           strcpy (errMsg,"Keyword string exceeds maximum length: '");
+		           strncat(errMsg, yytext, 20);
+		           strcat (errMsg,"...'");
+		           ffpmsg (errMsg);
+                           yylval->str[0] = '\0';
+                        } else {
+                           yylval->str[0]     = '#';
+                           strncpy(yylval->str+1,&yytext[2],len);
+                           yylval->str[len+1] = '\0';
+                        }
                         yytext = yylval->str;
 		     }
                      result = (*yylParse->getData)(yylParse, yytext, (yylval));
@@ -1606,7 +1627,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 465 "eval.l"
+#line 486 "eval.l"
 {
                   int len;
                   len = strlen(yytext) - 2;
@@ -1627,11 +1648,21 @@ YY_RULE_SETUP
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 482 "eval.l"
+#line 503 "eval.l"
 {
 		 int    len,type;
-
-                 if (yytext[0] == '$') {
+		 
+                 len=strlen(yytext);
+                 if (len >= MAX_STRLEN) {
+		    char errMsg[100];
+		    yylParse->status = PARSE_SYNTAX_ERR;
+		    strcpy (errMsg,"Variable exceeds maximum length: '");
+		    strncat(errMsg, yytext, 20);
+		    strcat (errMsg,"...'");
+		    ffpmsg (errMsg);
+                    yylval->str[0] = '\0';
+		    yytext = yylval->str;
+                 } else if (yytext[0] == '$') {
 		    len = strlen(yytext) - 2;
 		    strncpy(yylval->str,&yytext[1],len);
 		    yylval->str[len] = '\0';
@@ -1643,12 +1674,24 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 494 "eval.l"
+#line 525 "eval.l"
 {
                   char *fname;
-		  int len=0;
+		  int len=strlen(yytext);
                   fname = &(yylval->str[0]);
-		  while( (fname[len]=toupper(yytext[len])) ) len++;
+                  if (len >= MAX_STRLEN) {
+		    char errMsg[100];
+		    yylParse->status = PARSE_SYNTAX_ERR;
+		    strcpy (errMsg,"Function exceeds maximum length: '");
+		    strncat(errMsg, yytext, 20);
+		    strcat (errMsg,"...'");
+		    ffpmsg (errMsg);
+		    len = 0;
+                    fname[0] = '\0';
+                  } else {
+                     len = 0;
+		     while( (fname[len]=toupper(yytext[len])) ) len++;
+                  }
 
                   if(      FSTRCMP(fname,"BOX(")==0 
                         || FSTRCMP(fname,"CIRCLE(")==0 
@@ -1680,86 +1723,86 @@ YY_RULE_SETUP
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 527 "eval.l"
+#line 570 "eval.l"
 { return( INTCAST ); }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 528 "eval.l"
+#line 571 "eval.l"
 { return( FLTCAST ); }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 529 "eval.l"
+#line 572 "eval.l"
 { return( POWER   ); }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 530 "eval.l"
+#line 573 "eval.l"
 { return( NOT     ); }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 531 "eval.l"
+#line 574 "eval.l"
 { return( OR      ); }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 532 "eval.l"
+#line 575 "eval.l"
 { return( AND     ); }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 533 "eval.l"
+#line 576 "eval.l"
 { return( EQ      ); }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 534 "eval.l"
+#line 577 "eval.l"
 { return( NE      ); }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 535 "eval.l"
+#line 578 "eval.l"
 { return( GT      ); }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 536 "eval.l"
+#line 579 "eval.l"
 { return( LT      ); }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 537 "eval.l"
+#line 580 "eval.l"
 { return( GTE     ); }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 538 "eval.l"
+#line 581 "eval.l"
 { return( LTE     ); }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 539 "eval.l"
+#line 582 "eval.l"
 { return( XOR     ); }
 	YY_BREAK
 case 28:
 /* rule 28 can match eol */
 YY_RULE_SETUP
-#line 540 "eval.l"
+#line 583 "eval.l"
 { return( '\n'    ); }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 541 "eval.l"
+#line 584 "eval.l"
 { return( yytext[0] ); }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 542 "eval.l"
+#line 585 "eval.l"
 ECHO;
 	YY_BREAK
-#line 1763 "eval_l.c"
+#line 1806 "eval_l.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2940,7 +2983,7 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 542 "eval.l"
+#line 585 "eval.l"
 
 
 int yywrap(yyscan_t scanner)
