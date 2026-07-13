@@ -1604,7 +1604,7 @@ YY_RULE_SETUP
 		     int result;
                      if (yytext[1] == '$') {
                         len = strlen(yytext) - 3;
-                        if (len >= MAX_STRLEN)
+                        if (len >= MAX_STRLEN-1)
                         {
 		           char errMsg[100];
 		           yylParse->status = PARSE_SYNTAX_ERR;
