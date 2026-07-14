@@ -282,10 +282,11 @@ int mem_truncate(int handle, LONGLONG filesize)
 
         *(memTable[handle].memaddrptr) = ptr;
         *(memTable[handle].memsizeptr) = (size_t) (filesize);
+
+        memTable[handle].currentpos = filesize;
+        memTable[handle].fitsfilesize = filesize;
     }
 
-    memTable[handle].currentpos = filesize;
-    memTable[handle].fitsfilesize = filesize;
     return(0);
 }
 /*--------------------------------------------------------------------------*/
