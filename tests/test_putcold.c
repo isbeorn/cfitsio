@@ -697,7 +697,7 @@ test_write_nan_values(void)
 	int status = 0;
 	char *ttype[] = { "DBLCOL" };
 	char *tform[] = { "1D" };
-	double nan_val = 0.0 / 0.0;  /* Generate NaN. */
+	double nan_val = NAN;
 	double data[] = { 1.0, nan_val, 3.0 };
 	double result[3];
 	char nularray[3];
@@ -725,7 +725,7 @@ test_write_infinity_values(void)
 	int status = 0;
 	char *ttype[] = { "DBLCOL" };
 	char *tform[] = { "1D" };
-	double inf_val = 1.0 / 0.0;  /* Generate infinity. */
+	double inf_val = INFINITY;
 	double data[] = { -inf_val, 0.0, inf_val };
 	double result[3];
 	int anynull;
