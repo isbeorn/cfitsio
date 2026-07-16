@@ -591,6 +591,7 @@ if test "x$BUILD_REENTRANT" = xyes; then
   fi
   AC_CHECK_LIB([pthread],[main],[],[AC_MSG_ERROR(Unable to locate pthread library needed when enabling reentrant multithreading)])
 fi
+AC_SUBST(BUILD_REENTRANT)
 
 # -------------------------------------------------------------------------
 # there are some idiosyncrasies with semun defs (used in semxxx). Solaris
