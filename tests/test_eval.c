@@ -1495,6 +1495,12 @@ test_ffsrow_same_file_filter(void)
 
 /*
  * Test ffcalc with LONGLONG column
+ *
+ * The multiplier is kept small enough that INTCOL * multiplier stays under
+ * 2^31.  The expression evaluator holds integer results in a C long (see lng
+ * in eval_defs.h), so the intermediate value is only as wide as the platform's
+ * long regardless of the output column type: where long is 32 bits (Windows)
+ * a larger expression silently wraps instead of producing a 64-bit result.
  */
 static void
 test_ffcalc_longlong_column(void)
@@ -1508,7 +1514,7 @@ test_ffcalc_longlong_column(void)
 	create_test_table(&f);
 
 	/* Create longlong column from expression */
-	call_05(ffcalc, f, "INTCOL * 1000000000", f, "BIGCOL", "1K");
+	call_05(ffcalc, f, "INTCOL * 100000000", f, "BIGCOL", "1K");
 
 	/* Verify column was created */
 	call_02(ffgncl, f, &ncols);
@@ -1516,8 +1522,8 @@ test_ffcalc_longlong_column(void)
 
 	/* Read the longlong column using ffgcvjj */
 	call_08(ffgcvjj, f, 5, 1, 1, 10, 0, results, &anynul);
-	fail_if(results[0] != 1000000000LL);
-	fail_if(results[9] != 10000000000LL);
+	fail_if(results[0] != 100000000LL);
+	fail_if(results[9] != 1000000000LL);
 
 	call_01(ffclos, f);
 }
@@ -1556,10 +1562,11 @@ test_ffcrow_longlong_output(void)
 
 	create_test_table(&f);
 
-	/* Test expression returning as longlong */
-	call_08(ffcrow, f, TLONGLONG, "INTCOL * 1000000000", 1, 10, NULL, results, &anynul);
-	fail_if(results[0] != 1000000000LL);
-	fail_if(results[9] != 10000000000LL);
+	/* Test expression returning as longlong.  The multiplier is kept under
+	   2^31; see test_ffcalc_longlong_column. */
+	call_08(ffcrow, f, TLONGLONG, "INTCOL * 100000000", 1, 10, NULL, results, &anynul);
+	fail_if(results[0] != 100000000LL);
+	fail_if(results[9] != 1000000000LL);
 
 	call_01(ffclos, f);
 }
@@ -2103,13 +2110,14 @@ test_ffcalc_longlong_no_tform(void)
 
 	create_test_table(&f);
 
-	/* Create longlong column with explicit format (K = LONGLONG) */
-	call_05(ffcalc, f, "INTCOL * 1000000000", f, "BIGNUM", "1K");
+	/* Create longlong column with explicit format (K = LONGLONG).  The
+	   multiplier is kept under 2^31; see test_ffcalc_longlong_column. */
+	call_05(ffcalc, f, "INTCOL * 100000000", f, "BIGNUM", "1K");
 
 	/* Read back results */
 	call_08(ffgcvjj, f, 5, 1, 1, 10, 0, results, &anynul);
-	fail_if(results[0] != 1000000000LL);
-	fail_if(results[4] != 5000000000LL);
+	fail_if(results[0] != 100000000LL);
+	fail_if(results[4] != 500000000LL);
 
 	call_01(ffclos, f);
 }

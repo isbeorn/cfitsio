@@ -887,7 +887,8 @@ test_read_table_subsection(void)
 	double data1[] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 };
 	double data2[] = { 10.0, 20.0, 30.0, 40.0, 50.0, 60.0 };
 	double data3[] = { 100.0, 200.0, 300.0, 400.0, 500.0, 600.0 };
-	double result[4];
+	/* 2 elements from each of 3 rows. */
+	double result[6];
 	long naxes[] = { 6 };
 	long blc[] = { 2, 1 };  /* Start at element 2, row 1. */
 	long trc[] = { 3, 3 };  /* End at element 3, row 3. */
@@ -909,6 +910,10 @@ test_read_table_subsection(void)
 	/* Row 1: elem 2,3 = 2.0, 3.0. Row 2: 20.0, 30.0. Row 3: 200.0, 300.0. */
 	fail_if(result[0] != 2.0);
 	fail_if(result[1] != 3.0);
+	fail_if(result[2] != 20.0);
+	fail_if(result[3] != 30.0);
+	fail_if(result[4] != 200.0);
+	fail_if(result[5] != 300.0);
 	call_01(ffclos, f);
 }
 

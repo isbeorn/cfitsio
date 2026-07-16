@@ -1,10 +1,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include "fitsio.h"
-#include "drvrsmem.h"
 #include "test_macros.h"
 
 #ifdef HAVE_SHMEM_SERVICES
+
+/* drvrsmem.h pulls in <sys/ipc.h> etc, which do not exist on all platforms. */
+#include "drvrsmem.h"
 
 static void
 test_create_shmem_file(void)
