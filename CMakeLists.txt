@@ -213,7 +213,14 @@ IF(HAVE_SHMEM_SERVICES)
 ENDIF()
 
 IF(WIN32 AND BUILD_SHARED_LIBS)
-    ADD_DEFINITIONS(-Dcfitsio_EXPORTS)
+    IF(TESTS)
+        # The tests/ unit tests call internal helper functions (fits_rcomp,
+        # pl_p2li, simplerng_*, ...) that are not part of the public API.  When
+        # tests are built we export the whole library via WINDOWS_EXPORT_ALL_SYMBOLS
+    ELSE()
+        # Normal build: export only the public API marked with CFITS_API.
+        ADD_DEFINITIONS(-Dcfitsio_EXPORTS)
+    ENDIF()
 ENDIF()
 
 #==============================================================================
@@ -255,6 +262,14 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 #==============================================================================
 
 ADD_LIBRARY(${LIB_NAME} ${LIB_TYPE} ${H_FILES} ${SRC_FILES})
+
+# When building the unit tests, export every symbol from the Windows DLL so the
+# tests (which call internal helper functions) resolve against it, just as they
+# do with the Unix shared library.  Regular builds keep the minimal public
+# export surface (see the cfitsio_EXPORTS handling above).
+IF(WIN32 AND BUILD_SHARED_LIBS AND TESTS)
+    SET_TARGET_PROPERTIES(${LIB_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+ENDIF()
 
 # Math:
 TARGET_LINK_LIBRARIES(${LIB_NAME} ${M_LIB})
