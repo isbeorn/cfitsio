@@ -362,6 +362,23 @@ IF (TESTS)
 
     install(TARGETS cookbook RUNTIME DESTINATION bin)
 
+    # Unit tests in the tests/ directory (mirrors the autotools tests.am list).
+    # Each tests/test_*.c is a standalone program linked against the library;
+    # registering them here lets `ctest` (e.g. the Windows CI) run them too.
+    FILE(GLOB UNIT_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_*.c)
+    FOREACH(test_src ${UNIT_TEST_SOURCES})
+        GET_FILENAME_COMPONENT(test_name ${test_src} NAME_WE)
+        ADD_EXECUTABLE(${test_name} ${test_src})
+        TARGET_LINK_LIBRARIES(${test_name} ${LIB_NAME})
+        # test_macros.h and other test headers live in tests/
+        TARGET_INCLUDE_DIRECTORIES(${test_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+        ADD_TEST(NAME ${test_name} COMMAND ${test_name})
+        # A test may report itself as skipped with exit code 77 (e.g.
+        # test_drvrsmem when shared-memory services are unavailable), matching
+        # the automake convention; treat that as SKIP rather than failure.
+        SET_TESTS_PROPERTIES(${test_name} PROPERTIES SKIP_RETURN_CODE 77)
+    ENDFOREACH()
+
 ENDIF(TESTS)
 
 IF (ITERPROGS)
