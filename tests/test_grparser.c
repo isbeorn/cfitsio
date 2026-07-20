@@ -9,6 +9,25 @@
 #include "grparser.h"
 #include "test_macros.h"
 
+#ifdef _WIN32
+/* MSVC lacks the POSIX setenv/unsetenv; emulate them with _putenv_s. */
+static int
+setenv(const char *name, const char *value, int overwrite)
+{
+	if (!overwrite && getenv(name) != NULL) {
+		return 0;
+	}
+	return _putenv_s(name, value);
+}
+
+static int
+unsetenv(const char *name)
+{
+	/* Assigning an empty value removes the variable. */
+	return _putenv_s(name, "");
+}
+#endif
+
 #define test_path "test_grparser.fits"
 #define template_path "test_grparser.tpl"
 

@@ -700,7 +700,7 @@ test_write_nan_values(void)
 	int status = 0;
 	char *ttype[] = { "FLOATCOL" };
 	char *tform[] = { "1E" };
-	float nan_val = 0.0f / 0.0f;  /* Generate NaN. */
+	float nan_val = NAN;
 	float data[] = { 1.0f, nan_val, 3.0f };
 	float result[3];
 	char nularray[3];
