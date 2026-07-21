@@ -8,7 +8,7 @@
 #include "test_macros.h"
 
 int pl_p2li(int *, int, short *, int);
-int pl_l2pi(short *, int, int *, int);
+int pl_l2pi(short *, size_t, int, int *, int);
 
 
 static void
@@ -18,7 +18,7 @@ test_array(int *in, size_t siz)
 	int output[16];
 
 	fail_if(pl_p2li(in, 1, linelist, siz) <= 0);
-	fail_if(pl_l2pi(linelist, 1, output, siz) != siz);
+	fail_if(pl_l2pi(linelist, 100, 1, output, siz) != siz);
 
 	for (size_t i = 0; i < siz; i += 1) {
 		fail_if(output[i] != in[i]);
@@ -69,7 +69,7 @@ test_negative_clamp(void)
 	int output[3];
 
 	fail_if(pl_p2li(pixels, 1, linelist, 3) <= 0);
-	fail_if(pl_l2pi(linelist, 1, output, 3) != 3);
+	fail_if(pl_l2pi(linelist, 100, 1, output, 3) != 3);
 
 	fail_if(output[0] != 0);
 	fail_if(output[1] != 10);
@@ -84,7 +84,7 @@ test_partial_decode(void)
 	int output[5];
 
 	fail_if(pl_p2li(pixels, 1, linelist, 10) <= 0);
-	fail_if(pl_l2pi(linelist, 1, output, 5) != 5);
+	fail_if(pl_l2pi(linelist, 100, 1, output, 5) != 5);
 
 	for (int i = 0; i < 5; i += 1) {
 		fail_if(output[i] != pixels[i]);
@@ -98,7 +98,7 @@ test_l2pi_empty(void)
 	int output[10];
 
 	linelist[3] = 0;
-	fail_if(pl_l2pi(linelist, 1, output, 0) != 0);
+	fail_if(pl_l2pi(linelist, 100, 1, output, 0) != 0);
 }
 
 static void
@@ -109,7 +109,7 @@ test_decode_offset(void)
 	int output[5];
 
 	fail_if(pl_p2li(pixels, 1, linelist, 10) <= 0);
-	fail_if(pl_l2pi(linelist, 5, output, 5) != 5);
+	fail_if(pl_l2pi(linelist, 100, 5, output, 5) != 5);
 }
 
 static void
@@ -120,7 +120,7 @@ test_decode_more_than_encoded(void)
 	int output[10];
 
 	fail_if(pl_p2li(pixels, 1, linelist, 5) <= 0);
-	fail_if(pl_l2pi(linelist, 1, output, 10) != 10);
+	fail_if(pl_l2pi(linelist, 100, 1, output, 10) != 10);
 
 	for (int i = 0; i < 5; i += 1) {
 		fail_if(output[i] != pixels[i]);
@@ -143,7 +143,7 @@ test_old_format_linelist(void)
 	linelist[4] = 0;
 	linelist[5] = 0;
 
-	fail_if(pl_l2pi(linelist, 1, output, 5) != 5);
+	fail_if(pl_l2pi(linelist, 20, 1, output, 5) != 5);
 }
 
 static void
@@ -165,7 +165,7 @@ test_opcode3_negative_delta(void)
 	linelist[10] = (4 << 12) | 1;   /* opcode 4: run of 1 at pv=6 */
 	linelist[11] = (0 << 12) | 1;   /* opcode 0: 1 zero */
 
-	fail_if(pl_l2pi(linelist, 1, output, 3) != 3);
+	fail_if(pl_l2pi(linelist, 20, 1, output, 3) != 3);
 	fail_if(output[0] != 11);
 	fail_if(output[1] != 6);
 	fail_if(output[2] != 0);
