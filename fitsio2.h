@@ -1150,7 +1150,7 @@ int fits_rdecomp_short (unsigned char *c, int clen, unsigned short array[], int 
 int fits_rdecomp_byte (unsigned char *c, int clen, unsigned char array[], int nx,
              int nblock);
 int pl_p2li (int *pxsrc, int xs, short *lldst, int npix);
-int pl_l2pi (short *ll_src, int xs, int *px_dst, int npix);
+int pl_l2pi (short *ll_src, size_t srclen, int xs, int *px_dst, int npix);
 int fits_init_randoms(void);
 int fits_unset_compression_param( fitsfile *fptr, int *status);
 int fits_unset_compression_request( fitsfile *fptr, int *status);
